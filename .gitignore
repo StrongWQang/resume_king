@@ -1,0 +1,30 @@
+# 忽略系统文件
+.DS_Store
+Thumbs.db
+
+# 忽略依赖目录
+node_modules/
+
+# 忽略构建输出
+dist/
+build/
+
+# 忽略日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 忽略编辑器配置
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 忽略临时文件
+*.tmp
+*.temp
+.cache/
