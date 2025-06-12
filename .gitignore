@@ -4,6 +4,8 @@ Thumbs.db
 
 # 忽略依赖目录
 node_modules/
+target/
+
 
 # 忽略构建输出
 dist/
@@ -28,3 +30,4 @@ yarn-error.log*
 *.tmp
 *.temp
 .cache/
+*.class
