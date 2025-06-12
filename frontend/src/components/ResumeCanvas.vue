@@ -121,9 +121,9 @@ const minSize = 50 // 最小尺寸
 // 添加手柄状态
 const hoveredHandle = ref('')
 
-// 添加对齐辅助线相关变量
+// 修改对齐辅助线相关变量
 const alignmentLines = ref<{ x: number[], y: number[] }>({ x: [], y: [] })
-const alignmentThreshold = 5 // 对齐阈值
+const alignmentThreshold = 5 // 对齐阈值（像素）
 
 // 检查鼠标是否在手柄上
 const isOverHandle = (x: number, y: number, handleX: number, handleY: number) => {
@@ -190,8 +190,8 @@ const handleDrop = async (event: DragEvent) => {
       type: componentType,
       x,
       y,
-      width: componentType.startsWith('divider-') ? 400 : (componentType === 'image' ? 200 : 200),
-      height: componentType.startsWith('divider-') ? 20 : (componentType === 'image' ? 200 : 100),
+      width: componentType.startsWith('divider-') ? 400 : (componentType === 'image' ? 200 : 120),
+      height: componentType.startsWith('divider-') ? 20 : (componentType === 'image' ? 200 : 30),
       content: componentType.startsWith('text-') ? getDefaultTextContent(componentType) : undefined,
       // 添加文本相关属性
       fontSize: componentType.startsWith('text-') ? getDefaultFontSize(componentType) : undefined,
@@ -318,35 +318,13 @@ const handleMouseDown = (event: MouseEvent) => {
   renderCanvas()
 }
 
-// 计算对齐线
+// 移除计算对齐线函数
 const calculateAlignmentLines = (component: any) => {
-  const lines = { x: [] as number[], y: [] as number[] }
-  
-  // 获取其他组件的边界
-  store.components.forEach(other => {
-    if (other.id === component.id) return
-    
-    // 水平对齐线
-    lines.x.push(other.x) // 左边界
-    lines.x.push(other.x + other.width) // 右边界
-    lines.x.push(other.x + other.width / 2) // 中心线
-    
-    // 垂直对齐线
-    lines.y.push(other.y) // 上边界
-    lines.y.push(other.y + other.height) // 下边界
-    lines.y.push(other.y + other.height / 2) // 中心线
-  })
-  
-  return lines
+  return { x: [], y: [] }
 }
 
-// 检查是否需要对齐
+// 移除检查对齐函数
 const checkAlignment = (value: number, lines: number[]) => {
-  for (const line of lines) {
-    if (Math.abs(value - line) <= alignmentThreshold) {
-      return line
-    }
-  }
   return null
 }
 
@@ -362,7 +340,13 @@ const handleMouseMove = (event: MouseEvent) => {
     const dx = event.clientX - startX
     const dy = event.clientY - startY
     
-    store.updateSelectedComponentPosition(dx, dy)
+    // 计算新的位置
+    let newX = store.selectedComponent.x + dx
+    let newY = store.selectedComponent.y + dy
+    
+    // 更新组件位置
+    store.selectedComponent.x = newX
+    store.selectedComponent.y = newY
     
     // 更新起始位置，用于下一次相对移动
     startX = event.clientX
@@ -401,12 +385,21 @@ const handleTextKeyDown = (event: KeyboardEvent, component: any) => {
 // 修改原有的 handleKeyDown 函数
 const handleKeyDown = (event: KeyboardEvent) => {
   // 如果当前选中的是文本组件，且正在编辑文本，则不处理删除操作
-  if (store.selectedComponent?.type === 'text' && 
+  if (store.selectedComponent?.type.startsWith('text-') && 
       document.activeElement?.classList.contains('text-content')) {
     return
   }
   
   if (event.key === 'Delete' || event.key === 'Backspace') {
+    // 检查是否是文本组件且有内容
+    if (store.selectedComponent?.type.startsWith('text-') && 
+        store.selectedComponent.content && 
+        store.selectedComponent.content.trim() !== '') {
+      // 如果文本组件有内容，阻止删除
+      event.preventDefault()
+      return
+    }
+    
     store.deleteSelectedComponent()
     renderCanvas()
   }
@@ -592,5 +585,10 @@ const handleResizeEnd = () => {
 
 .resize-handle:hover {
   background-color: #66b1ff;
+}
+
+/* 对齐辅助线样式 */
+.alignment-line {
+  display: none;
 }
 </style> 

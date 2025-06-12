@@ -1,252 +1,193 @@
 package com.example.resumebuilder.service;
 
-import com.aliyun.oss.OSS;
-import com.aliyun.oss.OSSClientBuilder;
-import com.aliyun.oss.OSSException;
-import com.aliyun.oss.model.OSSObject;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.example.resumebuilder.entity.Resume;
+import com.example.resumebuilder.mapper.ResumeMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.io.image.ImageData;
-import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.kernel.font.PdfFont;
-import com.itextpdf.kernel.font.PdfFontFactory;
-import com.itextpdf.kernel.geom.PageSize;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Image;
-import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
-import com.itextpdf.layout.properties.VerticalAlignment;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.awt.Color;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Div;
+import com.itextpdf.io.font.PdfEncodings;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.colors.DeviceRgb;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 @Service
 public class ResumeService {
+    private static final Logger logger = LoggerFactory.getLogger(ResumeService.class);
 
-    private static final String STORAGE_DIR = System.getProperty("user.home") + "/resume_king/storage/resumes";
-    private final ObjectMapper objectMapper;
-    private static final Map<String, String> FONT_MAPPING = new HashMap<>();
-    private static final float SCALE_FACTOR = 0.75f; // 缩放因子，用于调整 PDF 中的尺寸
+    @Autowired
+    private ResumeMapper resumeMapper;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    static {
-        // 字体映射
-        FONT_MAPPING.put("Microsoft YaHei", "STSong-Light");
-        FONT_MAPPING.put("SimSun", "STSong-Light");
-        FONT_MAPPING.put("SimHei", "STHeiti-Light");
-        FONT_MAPPING.put("KaiTi", "STKaiti");
-        FONT_MAPPING.put("FangSong", "STFangsong");
-    }
-
-    @Value("${aliyun.oss.endpoint}")
-    private String endpoint;
-
-    @Value("${aliyun.oss.accessKeyId}")
-    private String accessKeyId;
-
-    @Value("${aliyun.oss.accessKeySecret}")
-    private String accessKeySecret;
-
-    @Value("${aliyun.oss.bucketName}")
-    private String bucketName;
-
-    public ResumeService() {
-        this.objectMapper = new ObjectMapper();
-        // 确保存储目录存在
-        try {
-            Files.createDirectories(Paths.get(STORAGE_DIR));
-        } catch (IOException e) {
-            throw new RuntimeException("无法创建存储目录", e);
-        }
-    }
-
+    @Transactional
     public String saveResume(List<Map<String, Object>> resumeData) {
-        String id = UUID.randomUUID().toString();
-        String objectName = "resumes/" + id + ".json";
-        
-        // 创建OSSClient实例
-        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
-        
         try {
-            // 将数据转换为JSON字符串
-            String jsonContent = objectMapper.writeValueAsString(resumeData);
+            logger.info("开始保存简历数据: {}", resumeData);
             
-            // 上传到OSS
-            ossClient.putObject(bucketName, objectName, new ByteArrayInputStream(jsonContent.getBytes(StandardCharsets.UTF_8)));
+            String id = UUID.randomUUID().toString();
+            String content = objectMapper.writeValueAsString(resumeData);
+            logger.debug("转换后的JSON内容: {}", content);
             
-            // 同时保存到本地（作为备份）
-            Path filePath = Paths.get(STORAGE_DIR, id + ".json");
-            Files.writeString(filePath, jsonContent);
+            // 创建简历实体
+            Resume resume = new Resume();
+            resume.setId(id);
+            resume.setContent(content);
+            resume.setCreateTime(LocalDateTime.now());
+            
+            // 保存到数据库
+            resumeMapper.insert(resume);
+            logger.info("简历保存成功，ID: {}", id);
             
             return id;
-        } catch (IOException e) {
-            throw new RuntimeException("保存简历失败", e);
-        } finally {
-            // 关闭OSSClient
-            ossClient.shutdown();
+        } catch (Exception e) {
+            logger.error("保存简历失败", e);
+            throw new RuntimeException("保存简历失败: " + e.getMessage(), e);
         }
     }
 
     public List<Map<String, Object>> getResume(String id) {
-        String objectName = "resumes/" + id + ".json";
-        
-        // 创建OSSClient实例
-        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
-        
         try {
-            // 从OSS获取文件
-            OSSObject ossObject = ossClient.getObject(bucketName, objectName);
+            logger.info("开始获取简历数据，ID: {}", id);
             
-            // 读取文件内容
-            String content = new String(ossObject.getObjectContent().readAllBytes(), StandardCharsets.UTF_8);
-            
-            // 解析JSON
-            return objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
-        } catch (OSSException e) {
-            // 如果OSS中不存在，尝试从本地读取
-            Path filePath = Paths.get(STORAGE_DIR, id + ".json");
-            try {
-                if (Files.exists(filePath)) {
-                    String content = Files.readString(filePath);
-                    return objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
-                }
-            } catch (IOException ex) {
-                throw new RuntimeException("读取本地简历失败", ex);
+            Resume resume = resumeMapper.findById(id);
+            if (resume == null) {
+                logger.warn("简历不存在，ID: {}", id);
+                throw new RuntimeException("简历不存在");
             }
-            throw new RuntimeException("简历不存在");
-        } catch (IOException e) {
-            throw new RuntimeException("读取简历失败", e);
-        } finally {
-            // 关闭OSSClient
-            ossClient.shutdown();
+            
+            List<Map<String, Object>> result = objectMapper.readValue(resume.getContent(), 
+                objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+            logger.info("成功获取简历数据，ID: {}", id);
+            
+            return result;
+        } catch (Exception e) {
+            logger.error("读取简历失败", e);
+            throw new RuntimeException("读取简历失败: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Resume> getAllResumes() {
+        logger.info("获取所有简历列表");
+        return resumeMapper.findAll();
+    }
+
+    @Transactional
+    public void deleteResume(String id) {
+        try {
+            logger.info("开始删除简历，ID: {}", id);
+            resumeMapper.deleteById(id);
+            logger.info("简历删除成功，ID: {}", id);
+        } catch (Exception e) {
+            logger.error("删除简历失败", e);
+            throw new RuntimeException("删除简历失败: " + e.getMessage(), e);
         }
     }
 
     public byte[] generatePdf(List<Map<String, Object>> resumeData) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            // 创建 PDF 文档
+
+        logger.info("开始生成PDF，接收到的简历数据：{}", resumeData.toString());
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
             PdfWriter writer = new PdfWriter(baos);
             PdfDocument pdf = new PdfDocument(writer);
-            Document document = new Document(pdf, PageSize.A4);
+            Document document = new Document(pdf);
             
-            // 遍历所有组件
+            // 设置页面大小为A4
+            pdf.setDefaultPageSize(com.itextpdf.kernel.geom.PageSize.A4);
+            
+            // 加载中文字体
+            PdfFont font = PdfFontFactory.createFont("STSongStd-Light", PdfEncodings.IDENTITY_H);
+            document.setFont(font);
+            
+            // 创建主容器
+            Div mainContainer = new Div();
+            mainContainer.setWidth(UnitValue.createPercentValue(100));
+            mainContainer.setHeight(UnitValue.createPercentValue(100));
+            
+            // 遍历组件并添加到PDF
             for (Map<String, Object> component : resumeData) {
                 String type = (String) component.get("type");
-                float x = ((Number) component.get("x")).floatValue() * SCALE_FACTOR;
-                float y = ((Number) component.get("y")).floatValue() * SCALE_FACTOR;
-                float width = ((Number) component.get("width")).floatValue() * SCALE_FACTOR;
-                float height = ((Number) component.get("height")).floatValue() * SCALE_FACTOR;
+                String content = (String) component.get("content");
+                Double x = ((Number) component.get("x")).doubleValue();
+                Double y = ((Number) component.get("y")).doubleValue();
+                Double width = ((Number) component.get("width")).doubleValue();
+                Double height = ((Number) component.get("height")).doubleValue();
+                Double fontSize = component.get("fontSize") != null ? 
+                    ((Number) component.get("fontSize")).doubleValue() : 12.0;
+                String color = (String) component.get("color");
+                String textAlign = (String) component.get("textAlign");
+                Double lineHeight = component.get("lineHeight") != null ? 
+                    ((Number) component.get("lineHeight")).doubleValue() : 1.5;
                 
-                // 根据组件类型处理
-                if ("text".equals(type)) {
-                    String content = (String) component.get("content");
-                    String fontFamily = (String) component.get("fontFamily");
-                    Number fontSize = (Number) component.get("fontSize");
-                    String color = (String) component.get("color");
-                    String textAlign = (String) component.get("textAlign");
-                    
-                    // 创建段落
+                if (content != null) {
                     Paragraph paragraph = new Paragraph(content);
-                    
-                    // 设置字体
-                    String pdfFontName = FONT_MAPPING.getOrDefault(fontFamily, "STSong-Light");
-                    PdfFont font = PdfFontFactory.createFont(pdfFontName, "UniGB-UCS2-H");
-                    paragraph.setFont(font);
+                    paragraph.setFont(font);  // 确保每个段落都使用中文字体
                     
                     // 设置字体大小
-                    float pdfFontSize = fontSize != null ? fontSize.floatValue() * SCALE_FACTOR : 12;
-                    paragraph.setFontSize(pdfFontSize);
+                    paragraph.setFontSize(fontSize.floatValue());
                     
                     // 设置颜色
                     if (color != null) {
-                        try {
-                            Color awtColor = Color.decode(color);
-                            DeviceRgb pdfColor = new DeviceRgb(
-                                awtColor.getRed() / 255f,
-                                awtColor.getGreen() / 255f,
-                                awtColor.getBlue() / 255f
-                            );
-                            paragraph.setFontColor(pdfColor);
-                        } catch (Exception e) {
-                            paragraph.setFontColor(ColorConstants.BLACK);
-                        }
+                        String[] rgb = color.replace("#", "").split("(?<=\\G.{2})");
+                        paragraph.setFontColor(new DeviceRgb(
+                            Integer.parseInt(rgb[0], 16),
+                            Integer.parseInt(rgb[1], 16),
+                            Integer.parseInt(rgb[2], 16)
+                        ));
                     }
                     
                     // 设置对齐方式
                     if (textAlign != null) {
-                        switch (textAlign.toLowerCase()) {
+                        switch (textAlign) {
                             case "center":
                                 paragraph.setTextAlignment(TextAlignment.CENTER);
                                 break;
                             case "right":
                                 paragraph.setTextAlignment(TextAlignment.RIGHT);
                                 break;
-                            case "justify":
-                                paragraph.setTextAlignment(TextAlignment.JUSTIFIED);
-                                break;
                             default:
                                 paragraph.setTextAlignment(TextAlignment.LEFT);
                         }
                     }
                     
-                    // 设置位置和大小
-                    paragraph.setFixedPosition(x, PageSize.A4.getHeight() - y - height, width);
-                    document.add(paragraph);
+                    // 设置行高
+                    paragraph.setMultipliedLeading(lineHeight.floatValue());
                     
-                } else if ("image".equals(type)) {
-                    String imageUrl = (String) component.get("imageUrl");
-                    if (imageUrl != null) {
-                        try {
-                            // 从 URL 加载图片数据
-                            byte[] imageBytes = new URL(imageUrl).openStream().readAllBytes();
-                            ImageData imageData = ImageDataFactory.create(imageBytes);
-                            
-                            // 创建图片
-                            Image image = new Image(imageData);
-                            
-                            // 设置位置和大小
-                            image.setFixedPosition(x, PageSize.A4.getHeight() - y - height);
-                            image.setWidth(UnitValue.createPointValue(width));
-                            image.setHeight(UnitValue.createPointValue(height));
-                            
-                            // 设置图片缩放模式
-                            String objectFit = (String) component.get("objectFit");
-                            if ("contain".equals(objectFit)) {
-                                image.setAutoScale(true);
-                            }
-                            
-                            document.add(image);
-                        } catch (IOException e) {
-                            System.err.println("加载图片失败: " + imageUrl);
-                        }
-                    }
+                    // 创建定位容器
+                    Div positionedDiv = new Div();
+                    positionedDiv.setFixedPosition(x.floatValue(), y.floatValue(), width.floatValue());
+                    positionedDiv.setHeight(UnitValue.createPointValue(height.floatValue()));
+                    positionedDiv.add(paragraph);
+                    
+                    mainContainer.add(positionedDiv);
                 }
             }
             
+            document.add(mainContainer);
             document.close();
             return baos.toByteArray();
-            
         } catch (IOException e) {
-            throw new RuntimeException("生成PDF失败", e);
+            logger.error("生成PDF失败", e);
+            throw new RuntimeException("生成PDF失败: " + e.getMessage(), e);
         }
     }
 } 

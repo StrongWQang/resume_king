@@ -20,6 +20,9 @@ import ResumeCanvas from './components/ResumeCanvas.vue'
 const store = useResumeStore()
 
 onMounted(async () => {
+  // 从本地存储加载数据
+  store.loadFromLocalStorage()
+  
   // 从 localStorage 获取上次编辑的简历 ID
   const lastResumeId = localStorage.getItem('lastResumeId')
   if (lastResumeId) {
@@ -27,12 +30,7 @@ onMounted(async () => {
       await store.loadResume(lastResumeId)
     } catch (error) {
       console.error('加载上次编辑的简历失败:', error)
-      // 如果加载失败，创建新简历
-      await store.saveResume()
     }
-  } else {
-    // 如果没有上次编辑的简历，创建新简历
-    await store.saveResume()
   }
 })
 </script>

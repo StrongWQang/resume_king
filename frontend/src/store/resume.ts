@@ -81,29 +81,21 @@ export const useResumeStore = defineStore('resume', {
       }
     },
 
-    // 自动保存
-    async autoSave() {
-      if (!this.currentResumeId) {
-        // 如果没有当前简历ID，先创建一个新简历
-        try {
-          const id = await this.saveResume()
-          this.currentResumeId = id
-          localStorage.setItem('lastResumeId', id)
-        } catch (error) {
-          console.error('自动保存失败:', error)
-        }
-      } else {
-        try {
-          await this.saveResume()
-        } catch (error) {
-          console.error('自动保存失败:', error)
-        }
+    // 自动保存到本地存储
+    autoSave() {
+      try {
+        // 将当前组件数据保存到 localStorage
+        localStorage.setItem('resumeData', JSON.stringify(this.components))
+        console.log('自动保存到本地存储成功')
+      } catch (error) {
+        console.error('自动保存到本地存储失败:', error)
       }
     },
 
-    // 保存简历数据
+    // 持久化保存到服务器
     async saveResume() {
       try {
+        console.log('开始保存简历数据到服务器:', this.components)
         const response = await fetch('/api/resumes', {
           method: 'POST',
           headers: {
@@ -111,16 +103,34 @@ export const useResumeStore = defineStore('resume', {
           },
           body: JSON.stringify(this.components)
         })
+        
         if (!response.ok) {
-          throw new Error('保存失败')
+          const errorText = await response.text()
+          console.error('保存失败，服务器响应:', errorText)
+          throw new Error(`保存失败: ${errorText}`)
         }
-        const data = await response.json()
-        this.currentResumeId = data.id
-        localStorage.setItem('lastResumeId', data.id)
-        return data.id
+        
+        const data = await response.text()
+        console.log('保存成功，返回数据:', data)
+        this.currentResumeId = data
+        localStorage.setItem('lastResumeId', data)
+        return data
       } catch (error) {
-        console.error('保存简历失败:', error)
+        console.error('保存简历失败，详细错误:', error)
         throw error
+      }
+    },
+
+    // 从本地存储加载数据
+    loadFromLocalStorage() {
+      try {
+        const savedData = localStorage.getItem('resumeData')
+        if (savedData) {
+          this.components = JSON.parse(savedData)
+          console.log('从本地存储加载数据成功')
+        }
+      } catch (error) {
+        console.error('从本地存储加载数据失败:', error)
       }
     },
 
@@ -190,4 +200,228 @@ export const useResumeStore = defineStore('resume', {
       }
     }
   }
-}) 
+})
+
+// 创建简历模板
+export const createResumeTemplate = () => {
+  return [
+    // 姓名和职位
+    {
+      id: `name-${Date.now()}`,
+      type: 'text-title',
+      x: 40,
+      y: 40,
+      width: 200,
+      height: 40,
+      content: '张三',
+      fontSize: 24,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 600,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.2
+    },
+    {
+      id: `title-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 85,
+      width: 200,
+      height: 30,
+      content: '软件工程师',
+      fontSize: 16,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 400,
+      color: '#666666',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    
+    // 分隔线
+    {
+      id: `divider-${Date.now()}`,
+      type: 'divider-solid',
+      x: 40,
+      y: 125,
+      width: 515,
+      height: 20,
+      color: '#e0e0e0',
+      padding: 10
+    },
+    
+    // 联系方式
+    {
+      id: `contact-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 155,
+      width: 515,
+      height: 30,
+      content: '电话：138-xxxx-xxxx | 邮箱：example@email.com | 地址：北京市朝阳区',
+      fontSize: 14,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 400,
+      color: '#666666',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    
+    // 教育背景
+    {
+      id: `edu-title-${Date.now()}`,
+      type: 'text-title',
+      x: 40,
+      y: 195,
+      width: 200,
+      height: 30,
+      content: '教育背景',
+      fontSize: 18,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 600,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    {
+      id: `edu-content-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 235,
+      width: 515,
+      height: 30,
+      content: '北京大学 | 计算机科学与技术 | 本科 | 2018-2022',
+      fontSize: 14,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 400,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    
+    // 工作经历
+    {
+      id: `work-title-${Date.now()}`,
+      type: 'text-title',
+      x: 40,
+      y: 275,
+      width: 200,
+      height: 30,
+      content: '工作经历',
+      fontSize: 18,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 600,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    {
+      id: `work-company-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 315,
+      width: 515,
+      height: 30,
+      content: 'ABC科技有限公司 | 软件工程师 | 2022.07-至今',
+      fontSize: 14,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 600,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    {
+      id: `work-desc-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 355,
+      width: 515,
+      height: 60,
+      content: '• 负责公司核心产品的开发和维护\n• 优化系统性能，提升用户体验\n• 参与技术方案设计和评审',
+      fontSize: 14,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 400,
+      color: '#666666',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    
+    // 技能特长
+    {
+      id: `skills-title-${Date.now()}`,
+      type: 'text-title',
+      x: 40,
+      y: 425,
+      width: 200,
+      height: 30,
+      content: '技能特长',
+      fontSize: 18,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 600,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    {
+      id: `skills-content-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 465,
+      width: 515,
+      height: 30,
+      content: '• 精通Java、Python等编程语言\n• 熟悉Spring Boot、Vue.js等主流框架\n• 具备良好的算法和数据结构基础',
+      fontSize: 14,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 400,
+      color: '#666666',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    
+    // 项目经验
+    {
+      id: `project-title-${Date.now()}`,
+      type: 'text-title',
+      x: 40,
+      y: 505,
+      width: 200,
+      height: 30,
+      content: '项目经验',
+      fontSize: 18,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 600,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    {
+      id: `project-name-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 545,
+      width: 515,
+      height: 30,
+      content: '企业级微服务平台 | 技术负责人 | 2023.01-2023.06',
+      fontSize: 14,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 600,
+      color: '#333333',
+      textAlign: 'left',
+      lineHeight: 1.5
+    },
+    {
+      id: `project-desc-${Date.now()}`,
+      type: 'text-basic',
+      x: 40,
+      y: 585,
+      width: 515,
+      height: 60,
+      content: '• 设计并实现微服务架构，提升系统可扩展性\n• 优化数据库性能，提升查询效率\n• 带领团队完成项目交付，获得客户好评',
+      fontSize: 14,
+      fontFamily: 'Microsoft YaHei',
+      fontWeight: 400,
+      color: '#666666',
+      textAlign: 'left',
+      lineHeight: 1.5
+    }
+  ]
+} 

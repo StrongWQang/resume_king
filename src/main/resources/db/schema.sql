@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS resume_king DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE resume_king;
+
+CREATE TABLE IF NOT EXISTS resume (
+    id VARCHAR(36) PRIMARY KEY,
+    content JSON NOT NULL,
+    create_time DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 

@@ -3,11 +3,32 @@
     <div class="logo">简历制作</div>
     <div class="actions">
       <el-button type="primary" @click="handleSave">保存</el-button>
-      <el-button @click="handleLoad">加载</el-button>
-      <el-button type="success" @click="handleExport">导出PDF</el-button>
+      <el-button type="danger" @click="handleClear">清空</el-button>
+      <el-dropdown @command="handleImportCommand">
+        <el-button type="primary">
+          导入简历
+          <el-icon class="el-icon--right"><arrow-down /></el-icon>
+        </el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="load">根据ID加载简历</el-dropdown-item>
+            <el-dropdown-item command="import">导入模板JSON</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+      <el-dropdown @command="handleExportCommand">
+        <el-button type="success">
+          导出简历
+          <el-icon class="el-icon--right"><arrow-down /></el-icon>
+        </el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="pdf">导出PDF</el-dropdown-item>
+            <el-dropdown-item command="template">导出模板JSON</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
       <el-button @click="handlePreview">预览</el-button>
-      <el-button type="warning" @click="handleExportTemplate">导出模板</el-button>
-      <el-button type="info" @click="handleImportTemplate">导入模板</el-button>
     </div>
 
     <!-- 加载简历对话框 -->
@@ -48,9 +69,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useResumeStore } from '../store/resume'
-import { UploadFilled } from '@element-plus/icons-vue'
+import { UploadFilled, ArrowDown } from '@element-plus/icons-vue'
 
 const store = useResumeStore()
 const loadDialogVisible = ref(false)
@@ -207,6 +228,50 @@ const handleNewResume = async () => {
   } catch (error) {
     ElMessage.error('创建新简历失败')
   }
+}
+
+// 添加导入命令处理函数
+const handleImportCommand = (command: string) => {
+  switch (command) {
+    case 'load':
+      handleLoad()
+      break
+    case 'import':
+      handleImportTemplate()
+      break
+  }
+}
+
+// 添加导出命令处理函数
+const handleExportCommand = (command: string) => {
+  switch (command) {
+    case 'pdf':
+      handleExport()
+      break
+    case 'template':
+      handleExportTemplate()
+      break
+  }
+}
+
+// 添加清空功能
+const handleClear = () => {
+  ElMessageBox.confirm(
+    '确定要清空当前编辑区吗？此操作不可恢复。',
+    '警告',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  )
+    .then(() => {
+      store.setComponents([])
+      ElMessage.success('已清空编辑区')
+    })
+    .catch(() => {
+      ElMessage.info('已取消清空操作')
+    })
 }
 </script>
 

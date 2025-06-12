@@ -1,6 +1,11 @@
 <template>
   <div class="left-panel">
     <div class="panel-title">组件</div>
+    <div class="template-button">
+      <el-button type="primary" @click="useTemplate" size="large" style="width: 100%">
+        使用简历模板
+      </el-button>
+    </div>
     <div class="component-list">
       <div
         v-for="item in components"
@@ -42,7 +47,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Document, Picture, List, User, ArrowDown, Minus } from '@element-plus/icons-vue'
+import { useResumeStore } from '../store/resume'
+import { createResumeTemplate } from '../store/resume'
+import { ElMessage } from 'element-plus'
 
+const store = useResumeStore()
 const expandedItems = ref<string[]>([])
 
 const components = [
@@ -60,20 +69,16 @@ const components = [
     type: 'image', 
     label: '图片', 
     icon: Picture,
-    subItems: [
-      { type: 'image-basic', label: '基础图片', icon: Picture },
-      { type: 'image-avatar', label: '头像图片', icon: Picture }
-    ]
   },
-  { 
-    type: 'list', 
-    label: '列表', 
-    icon: List,
-    subItems: [
-      { type: 'list-bullet', label: '项目符号列表', icon: List },
-      { type: 'list-number', label: '数字列表', icon: List }
-    ]
-  },
+  // {
+  //   type: 'list',
+  //   label: '列表',
+  //   icon: List,
+  //   subItems: [
+  //     { type: 'list-bullet', label: '项目符号列表', icon: List },
+  //     { type: 'list-number', label: '数字列表', icon: List }
+  //   ]
+  // },
   { 
     type: 'profile', 
     label: '个人信息', 
@@ -110,6 +115,22 @@ const handleDragStart = (event: DragEvent, item: any) => {
     event.dataTransfer.setData('componentType', item.type)
   }
 }
+
+const useTemplate = () => {
+  // 检查是否已有内容
+  if (store.components.length > 0) {
+    ElMessage.warning('当前简历已有内容，使用模板将覆盖现有内容')
+    return
+  }
+  
+  // 获取模板组件
+  const templateComponents = createResumeTemplate()
+  
+  // 设置到简历中
+  store.setComponents(templateComponents)
+  
+  ElMessage.success('已应用简历模板')
+}
 </script>
 
 <style scoped>
@@ -122,6 +143,10 @@ const handleDragStart = (event: DragEvent, item: any) => {
 .panel-title {
   font-size: 16px;
   font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.template-button {
   margin-bottom: 20px;
 }
 
