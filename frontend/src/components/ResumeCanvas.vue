@@ -41,7 +41,8 @@
               color: component.color,
               fontWeight: component.fontWeight,
               lineHeight: component.lineHeight,
-              textAlign: component.textAlign
+              textAlign: component.textAlign,
+              whiteSpace: 'pre-wrap'
             }"
             @input="handleTextInput($event, component)"
             @keydown="handleTextKeyDown($event, component)"
@@ -363,7 +364,22 @@ const handleMouseUp = () => {
 // 添加文本输入处理函数
 const handleTextInput = (event: Event, component: any) => {
   const target = event.target as HTMLElement
-  component.content = target.textContent || ''
+  let content = target.textContent || ''
+  
+  // 处理•符号，将其转换为换行
+  if (content.includes('•')) {
+    content = content.split('•').map((line, index) => {
+      // 第一行不需要添加•符号
+      return index === 0 ? line.trim() : '•' + line.trim()
+    }).join('\n')
+    
+    // 更新组件内容
+    component.content = content
+    target.textContent = content
+  } else {
+    component.content = content
+  }
+  
   store.updateSelectedComponent()
 }
 
