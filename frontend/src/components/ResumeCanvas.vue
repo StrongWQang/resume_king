@@ -1,6 +1,6 @@
 <template>
   <div class="canvas-container">
-    <canvas
+    <div
       ref="canvasRef"
       class="resume-canvas"
       @dragover.prevent
@@ -11,17 +11,84 @@
       @keydown="handleKeyDown"
       @click="handleCanvasClick"
       tabindex="0"
-    ></canvas>
+    >
+      <template v-for="component in store.components" :key="component.id">
+        <!-- 图片组件 -->
+        <ImageComponent
+          v-if="component.type === 'image'"
+          :component="component"
+          :ref="el => { if (el) imageRefs[component.id] = el }"
+        />
+        <!-- 文本组件 -->
+        <div
+          v-else-if="component.type.startsWith('text-')"
+          class="text-component"
+          :class="{ 'selected': store.selectedComponentId === component.id }"
+          :style="{
+            left: `${component.x}px`,
+            top: `${component.y}px`,
+            width: `${component.width}px`,
+            height: `${component.height}px`
+          }"
+          @mousedown.stop="handleMouseDown"
+        >
+          <div 
+            class="text-content" 
+            contenteditable="true" 
+            :style="{
+              fontSize: `${component.fontSize}px`,
+              fontFamily: component.fontFamily,
+              color: component.color,
+              fontWeight: component.fontWeight,
+              lineHeight: component.lineHeight,
+              textAlign: component.textAlign
+            }"
+            @input="handleTextInput($event, component)"
+            @keydown="handleTextKeyDown($event, component)"
+          >
+            {{ component.content }}
+          </div>
+          <!-- 添加调整大小的手柄 -->
+          <div
+            v-if="store.selectedComponentId === component.id"
+            class="resize-handle"
+            @mousedown.stop="handleResizeStart"
+          ></div>
+        </div>
+        <!-- 分隔线组件 -->
+        <div
+          v-else-if="component.type.startsWith('divider-')"
+          class="divider-component"
+          :class="component.type"
+          :style="{
+            left: `${component.x}px`,
+            top: `${component.y}px`,
+            width: `${component.width}px`,
+            padding: `${component.padding || 10}px 0`
+          }"
+          @mousedown.stop="handleMouseDown"
+        >
+          <div 
+            class="divider-line"
+            :style="{
+              borderColor: component.color || '#dcdfe6',
+              borderWidth: component.thickness ? `${component.thickness}px` : '1px'
+            }"
+          ></div>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useResumeStore } from '../store/resume'
+import ImageComponent from './ImageComponent.vue'
 
-const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasRef = ref<HTMLDivElement | null>(null)
 const store = useResumeStore()
-let ctx: CanvasRenderingContext2D | null = null
+const imageRefs = ref<Record<string, any>>({})
 let isDragging = false
 let isResizing = false
 let startX = 0
@@ -31,6 +98,8 @@ let initialWidth = 0
 let initialHeight = 0
 let initialX = 0
 let initialY = 0
+let resizeStartX = 0
+let resizeStartY = 0
 
 // 定义调整大小的手柄位置
 const resizeHandles = {
@@ -100,26 +169,12 @@ const isOnEdge = (x: number, y: number, component: any) => {
 
 onMounted(() => {
   if (canvasRef.value) {
-    ctx = canvasRef.value.getContext('2d')
-    initCanvas()
     // 确保 canvas 可以获得焦点
     canvasRef.value.focus()
   }
 })
 
-const initCanvas = () => {
-  if (!canvasRef.value || !ctx) return
-  
-  // 设置画布大小为 A4 纸张大小（像素）
-  canvasRef.value.width = 595 * 2  // A4 宽度（像素）
-  canvasRef.value.height = 842 * 2  // A4 高度（像素）
-  
-  // 设置画布背景为白色
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, canvasRef.value.width, canvasRef.value.height)
-}
-
-const handleDrop = (event: DragEvent) => {
+const handleDrop = async (event: DragEvent) => {
   if (!event.dataTransfer) return
   
   const componentType = event.dataTransfer.getData('componentType')
@@ -130,17 +185,104 @@ const handleDrop = (event: DragEvent) => {
     const y = event.clientY - rect.top
     
     // 添加新组件到 store
-    store.addComponent({
+    const newComponent = {
+      id: Date.now().toString(),
       type: componentType,
       x,
       y,
-      width: 200,
-      height: 100,
-      content: componentType === 'text' ? '请输入文本内容' : undefined
-    })
+      width: componentType.startsWith('divider-') ? 400 : (componentType === 'image' ? 200 : 200),
+      height: componentType.startsWith('divider-') ? 20 : (componentType === 'image' ? 200 : 100),
+      content: componentType.startsWith('text-') ? getDefaultTextContent(componentType) : undefined,
+      // 添加文本相关属性
+      fontSize: componentType.startsWith('text-') ? getDefaultFontSize(componentType) : undefined,
+      fontFamily: componentType.startsWith('text-') ? 'Microsoft YaHei' : undefined,
+      color: componentType.startsWith('text-') ? '#333333' : undefined,
+      fontWeight: componentType.startsWith('text-') ? getDefaultFontWeight(componentType) : undefined,
+      lineHeight: componentType.startsWith('text-') ? getDefaultLineHeight(componentType) : undefined,
+      textAlign: componentType.startsWith('text-') ? 'left' : undefined
+    }
     
-    // 重新渲染画布
-    renderCanvas()
+    store.addComponent(newComponent)
+    
+    // 如果是图片组件，自动触发文件选择
+    if (componentType === 'image') {
+      // 添加重试机制
+      let retryCount = 0
+      const maxRetries = 3
+      
+      const tryTriggerFileSelect = async () => {
+        await nextTick()
+        const imageComponent = imageRefs.value[newComponent.id]
+        if (imageComponent) {
+          console.log('Triggering file select for component:', newComponent.id)
+          await imageComponent.triggerFileSelect()
+        } else {
+          console.error(`Image component not found: ${newComponent.id} (attempt ${retryCount + 1}/${maxRetries})`)
+          if (retryCount < maxRetries) {
+            retryCount++
+            setTimeout(tryTriggerFileSelect, 100) // 100ms 后重试
+          }
+        }
+      }
+      
+      await tryTriggerFileSelect()
+    }
+  }
+}
+
+// 获取默认文本内容
+const getDefaultTextContent = (type: string) => {
+  switch (type) {
+    case 'text-basic':
+      return '请输入文本内容'
+    case 'text-title':
+      return '标题文本'
+    case 'text-paragraph':
+      return '段落文本'
+    default:
+      return '请输入文本内容'
+  }
+}
+
+// 获取默认字体大小
+const getDefaultFontSize = (type: string) => {
+  switch (type) {
+    case 'text-basic':
+      return 14
+    case 'text-title':
+      return 20
+    case 'text-paragraph':
+      return 14
+    default:
+      return 14
+  }
+}
+
+// 获取默认字体粗细
+const getDefaultFontWeight = (type: string) => {
+  switch (type) {
+    case 'text-basic':
+      return 400
+    case 'text-title':
+      return 600
+    case 'text-paragraph':
+      return 400
+    default:
+      return 400
+  }
+}
+
+// 获取默认行高
+const getDefaultLineHeight = (type: string) => {
+  switch (type) {
+    case 'text-basic':
+      return 1.5
+    case 'text-title':
+      return 1.2
+    case 'text-paragraph':
+      return 1.8
+    default:
+      return 1.5
   }
 }
 
@@ -162,24 +304,15 @@ const handleMouseDown = (event: MouseEvent) => {
   if (clickedComponent) {
     store.selectComponent(clickedComponent.id)
     
-    // 检查是否点击了调整大小的手柄或边界线
-    const edge = isOnEdge(x, y, clickedComponent)
-    if (edge) {
-      isResizing = true
-      resizeDirection = edge
-      initialWidth = clickedComponent.width
-      initialHeight = clickedComponent.height
-      initialX = clickedComponent.x
-      initialY = clickedComponent.y
-    } else {
+    // 如果不是在调整大小，则开始拖动
+    if (!isResizing) {
       isDragging = true
+      startX = event.clientX
+      startY = event.clientY
     }
   } else {
     store.selectComponent(null)
   }
-  
-  startX = event.clientX
-  startY = event.clientY
   
   // 重新渲染画布以显示选中状态
   renderCanvas()
@@ -224,80 +357,55 @@ const handleMouseMove = (event: MouseEvent) => {
   const mouseX = event.clientX - rect.left
   const mouseY = event.clientY - rect.top
   
-  // 更新光标样式和手柄悬停状态
-  if (store.selectedComponent && !isDragging && !isResizing) {
-    const edge = isOnEdge(mouseX, mouseY, store.selectedComponent)
-    hoveredHandle.value = edge
-  }
-  
-  if (!isDragging && !isResizing) return
-  
-  // 计算从鼠标按下开始的总位移
-  const dx = event.clientX - startX
-  const dy = event.clientY - startY
-  
-  if (isResizing && store.selectedComponent) {
-    const component = store.selectedComponent
-    const alignmentLines = calculateAlignmentLines(component)
-    
-    // 初始化新的位置和尺寸
-    let newX = component.x
-    let newY = component.y
-    let newWidth = component.width
-    let newHeight = component.height
-    
-    // 处理水平方向的调整
-    if (resizeDirection.includes('e')) {
-      // 右边界或右上角、右下角
-      const alignWidth = checkAlignment(initialX + Math.max(minSize, initialWidth + dx), alignmentLines.x)
-      newWidth = alignWidth !== null ? alignWidth - initialX : Math.max(minSize, initialWidth + dx)
-    }
-    if (resizeDirection.includes('w')) {
-      // 左边界或左上角、左下角
-      newX = initialX + dx
-      const alignX = checkAlignment(newX, alignmentLines.x)
-      if (alignX !== null) newX = alignX
-      newWidth = Math.max(minSize, initialWidth - (newX - initialX))
-    }
-    
-    // 处理垂直方向的调整
-    if (resizeDirection.includes('s')) {
-      // 下边界或左下角、右下角
-      const alignHeight = checkAlignment(initialY + Math.max(minSize, initialHeight + dy), alignmentLines.y)
-      newHeight = alignHeight !== null ? alignHeight - initialY : Math.max(minSize, initialHeight + dy)
-    }
-    if (resizeDirection.includes('n')) {
-      // 上边界或左上角、右上角
-      newY = initialY + dy
-      const alignY = checkAlignment(newY, alignmentLines.y)
-      if (alignY !== null) newY = alignY
-      newHeight = Math.max(minSize, initialHeight - (newY - initialY))
-    }
-    
-    // 更新组件状态
-    component.x = newX
-    component.y = newY
-    component.width = newWidth
-    component.height = newHeight
-    
-  } else if (isDragging) {
+  if (isDragging && store.selectedComponent) {
     // 拖动逻辑
+    const dx = event.clientX - startX
+    const dy = event.clientY - startY
+    
     store.updateSelectedComponentPosition(dx, dy)
+    
     // 更新起始位置，用于下一次相对移动
     startX = event.clientX
     startY = event.clientY
+    
+    renderCanvas()
   }
-  
-  renderCanvas()
 }
 
 const handleMouseUp = () => {
   isDragging = false
-  isResizing = false
-  resizeDirection = ''
 }
 
+// 添加文本输入处理函数
+const handleTextInput = (event: Event, component: any) => {
+  const target = event.target as HTMLElement
+  component.content = target.textContent || ''
+  store.updateSelectedComponent()
+}
+
+// 添加文本键盘事件处理函数
+const handleTextKeyDown = (event: KeyboardEvent, component: any) => {
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    const target = event.target as HTMLElement
+    const text = target.textContent || ''
+    
+    // 如果文本内容为空，则删除整个组件
+    if (text.trim() === '') {
+      event.preventDefault() // 阻止默认的删除行为
+      store.deleteSelectedComponent()
+      renderCanvas()
+    }
+  }
+}
+
+// 修改原有的 handleKeyDown 函数
 const handleKeyDown = (event: KeyboardEvent) => {
+  // 如果当前选中的是文本组件，且正在编辑文本，则不处理删除操作
+  if (store.selectedComponent?.type === 'text' && 
+      document.activeElement?.classList.contains('text-content')) {
+    return
+  }
+  
   if (event.key === 'Delete' || event.key === 'Backspace') {
     store.deleteSelectedComponent()
     renderCanvas()
@@ -327,141 +435,162 @@ const handleCanvasClick = (event: MouseEvent) => {
 }
 
 const renderCanvas = () => {
-  if (!ctx || !canvasRef.value) return
-  
-  // 清除画布
-  ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
-  
-  // 绘制背景
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, canvasRef.value.width, canvasRef.value.height)
-  
-  // 绘制所有组件
-  store.components.forEach(component => {
-    if (!ctx) return
-    
-    // 绘制组件边框
-    if (component.id === store.selectedComponentId) {
-      ctx.strokeStyle = '#1890ff'
-      ctx.lineWidth = 2
-      ctx.strokeRect(component.x, component.y, component.width, component.height)
-    }
-    
-    // 如果是选中的组件，绘制调整大小的手柄
-    if (component.id === store.selectedComponentId) {
-      const handlePositions = getHandlePositions(component)
-      
-      // 绘制所有手柄
-      for (const [direction, pos] of Object.entries(handlePositions)) {
-        ctx.fillStyle = direction === hoveredHandle.value ? handleHoverColor : handleColor
-        ctx.fillRect(pos.x, pos.y, handleSize, handleSize)
-      }
-      
-      // 绘制对齐线
-      if (isResizing && ctx) {
-        const lines = calculateAlignmentLines(component)
-        ctx.strokeStyle = '#1890ff'
-        ctx.lineWidth = 1
-        ctx.setLineDash([5, 5])
-        
-        // 绘制水平对齐线
-        lines.x.forEach(x => {
-          if (ctx) {
-            ctx.beginPath()
-            ctx.moveTo(x, 0)
-            ctx.lineTo(x, canvasRef.value!.height)
-            ctx.stroke()
-          }
-        })
-        
-        // 绘制垂直对齐线
-        lines.y.forEach(y => {
-          if (ctx) {
-            ctx.beginPath()
-            ctx.moveTo(0, y)
-            ctx.lineTo(canvasRef.value!.width, y)
-            ctx.stroke()
-          }
-        })
-        
-        if (ctx) {
-          ctx.setLineDash([])
-        }
-      }
-    }
-    
-    // 如果是文本组件，绘制文本内容
-    if (component.type === 'text' && component.content) {
-      ctx.save() // 保存当前画布状态
-
-      // 设置文本样式
-      const fontSize = component.fontSize || 16
-      const fontFamily = component.fontFamily || 'SimSun'
-      const padding = 10 // 内边距
-      const lineHeight = fontSize * 1.2 // 行高
-      ctx.font = `${fontSize}px ${fontFamily}`
-      ctx.fillStyle = component.color || '#000000'
-      ctx.textBaseline = 'top' // 设置文本基线为顶部
-
-      // 创建剪裁区域
-      ctx.beginPath()
-      ctx.rect(component.x, component.y, component.width, component.height)
-      ctx.clip()
-
-      // 文本换行与绘制逻辑
-      const words = component.content.split(' ')
-      let line = ''
-      let y = component.y + padding
-      const maxWidth = component.width - (padding * 2)
-
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' '
-        const metrics = ctx.measureText(testLine)
-        const testWidth = metrics.width
-
-        // 检查是否需要换行
-        if (testWidth > maxWidth && n > 0) {
-          ctx.fillText(line, component.x + padding, y)
-          line = words[n] + ' '
-          y += lineHeight
-        } else {
-          line = testLine
-        }
-
-        // 检查是否超出垂直边界
-        if (y + lineHeight > component.y + component.height - padding) {
-          break
-        }
-      }
-
-      // 绘制最后一行
-      ctx.fillText(line, component.x + padding, y)
-
-      ctx.restore() // 恢复画布状态
-    }
-  })
+  // 由于我们不再使用 canvas，这个函数可以留空或移除
+  // 如果需要，可以在这里添加其他渲染逻辑
 }
 
 // 监听 store 变化
 store.$subscribe(() => {
   renderCanvas()
 })
+
+// 添加调整大小的处理函数
+const handleResizeStart = (event: MouseEvent) => {
+  if (!store.selectedComponent) return
+  
+  isResizing = true
+  resizeStartX = event.clientX
+  resizeStartY = event.clientY
+  initialWidth = store.selectedComponent.width
+  initialHeight = store.selectedComponent.height
+  
+  // 添加全局事件监听
+  document.addEventListener('mousemove', handleResizeMove)
+  document.addEventListener('mouseup', handleResizeEnd)
+}
+
+const handleResizeMove = (event: MouseEvent) => {
+  if (!isResizing || !store.selectedComponent) return
+  
+  const dx = event.clientX - resizeStartX
+  const dy = event.clientY - resizeStartY
+  
+  // 计算新的宽度和高度
+  const newWidth = Math.max(100, initialWidth + dx)
+  const newHeight = Math.max(30, initialHeight + dy)
+  
+  // 更新组件尺寸
+  store.selectedComponent.width = newWidth
+  store.selectedComponent.height = newHeight
+  
+  // 触发重新渲染
+  renderCanvas()
+}
+
+const handleResizeEnd = () => {
+  isResizing = false
+  
+  // 移除全局事件监听
+  document.removeEventListener('mousemove', handleResizeMove)
+  document.removeEventListener('mouseup', handleResizeEnd)
+}
 </script>
 
 <style scoped>
 .canvas-container {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   overflow: auto;
-  background-color: #f0f0f0;
+  background-color: #f0f2f5;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 20px;
 }
 
 .resume-canvas {
+  width: 595px;
+  height: 842px;
   background-color: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  outline: none; /* 移除焦点时的边框 */
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  transform-origin: top left;
+  transform: scale(1);
+}
+
+.text-component {
+  position: absolute;
+  cursor: move;
+  border: 1px solid transparent;
+  min-width: 100px;
+  min-height: 30px;
+  user-select: none;
+  touch-action: none;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.01);
+}
+
+.text-component:hover {
+  border-color: #409eff;
+}
+
+.text-component.selected {
+  border-color: #409eff;
+  border-width: 2px;
+}
+
+.text-content {
+  width: 100%;
+  height: 100%;
+  padding: 5px;
+  outline: none;
+  word-break: break-word;
+  pointer-events: auto;
+}
+
+.divider-component {
+  position: absolute;
+  cursor: move;
+  border: 1px solid transparent;
+  min-width: 100px;
+}
+
+.divider-component:hover {
+  border-color: #409eff;
+}
+
+.divider-line {
+  height: 1px;
+  width: 100%;
+}
+
+/* 实线样式 */
+.divider-solid .divider-line {
+  border-bottom-style: solid;
+}
+
+/* 虚线样式 */
+.divider-dashed .divider-line {
+  border-bottom-style: dashed;
+}
+
+/* 点线样式 */
+.divider-dotted .divider-line {
+  border-bottom-style: dotted;
+}
+
+/* 渐变线样式 */
+.divider-gradient .divider-line {
+  height: 2px;
+  background: linear-gradient(to right, transparent, #409eff, transparent);
+  border: none;
+}
+
+/* 调整大小的手柄样式 */
+.resize-handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background-color: #409eff;
+  border-radius: 50%;
+  cursor: se-resize;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.resize-handle:hover {
+  background-color: #66b1ff;
 }
 </style> 

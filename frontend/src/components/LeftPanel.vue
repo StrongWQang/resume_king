@@ -6,25 +6,104 @@
         v-for="item in components"
         :key="item.type"
         class="component-item"
-        draggable="true"
-        @dragstart="handleDragStart($event, item)"
       >
-        <el-icon><component :is="item.icon" /></el-icon>
-        <span>{{ item.label }}</span>
+        <div 
+          class="component-header"
+          draggable="true"
+          @dragstart="handleDragStart($event, item)"
+          @click="toggleSubList(item.type)"
+        >
+          <el-icon><component :is="item.icon" /></el-icon>
+          <span>{{ item.label }}</span>
+          <el-icon class="arrow-icon" :class="{ 'is-expanded': expandedItems.includes(item.type) }">
+            <ArrowDown />
+          </el-icon>
+        </div>
+        <div 
+          v-if="expandedItems.includes(item.type)"
+          class="sub-list"
+        >
+          <div
+            v-for="subItem in item.subItems"
+            :key="subItem.type"
+            class="sub-item"
+            draggable="true"
+            @dragstart="handleDragStart($event, subItem)"
+          >
+            <el-icon><component :is="subItem.icon" /></el-icon>
+            <span>{{ subItem.label }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Document, Picture, List, User } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { Document, Picture, List, User, ArrowDown, Minus } from '@element-plus/icons-vue'
+
+const expandedItems = ref<string[]>([])
 
 const components = [
-  { type: 'text', label: '文本框', icon: Document },
-  { type: 'image', label: '图片', icon: Picture },
-  { type: 'list', label: '列表', icon: List },
-  { type: 'profile', label: '个人信息', icon: User }
+  { 
+    type: 'text', 
+    label: '文本框', 
+    icon: Document,
+    subItems: [
+      { type: 'text-basic', label: '基础文本', icon: Document },
+      { type: 'text-title', label: '标题文本', icon: Document },
+      { type: 'text-paragraph', label: '段落文本', icon: Document }
+    ]
+  },
+  { 
+    type: 'image', 
+    label: '图片', 
+    icon: Picture,
+    subItems: [
+      { type: 'image-basic', label: '基础图片', icon: Picture },
+      { type: 'image-avatar', label: '头像图片', icon: Picture }
+    ]
+  },
+  { 
+    type: 'list', 
+    label: '列表', 
+    icon: List,
+    subItems: [
+      { type: 'list-bullet', label: '项目符号列表', icon: List },
+      { type: 'list-number', label: '数字列表', icon: List }
+    ]
+  },
+  { 
+    type: 'profile', 
+    label: '个人信息', 
+    icon: User,
+    subItems: [
+      { type: 'profile-basic', label: '基础信息', icon: User },
+      { type: 'profile-contact', label: '联系方式', icon: User }
+    ]
+  },
+  {
+    type: 'divider',
+    label: '分隔线',
+    icon: Minus,
+    subItems: [
+      { type: 'divider-solid', label: '实线', icon: Minus },
+      { type: 'divider-dashed', label: '虚线', icon: Minus },
+      { type: 'divider-dotted', label: '点线', icon: Minus },
+      { type: 'divider-gradient', label: '渐变线', icon: Minus }
+    ]
+  }
 ]
+
+const toggleSubList = (type: string) => {
+  const index = expandedItems.value.indexOf(type)
+  if (index === -1) {
+    expandedItems.value.push(type)
+  } else {
+    expandedItems.value.splice(index, 1)
+  }
+}
 
 const handleDragStart = (event: DragEvent, item: any) => {
   if (event.dataTransfer) {
@@ -53,16 +132,47 @@ const handleDragStart = (event: DragEvent, item: any) => {
 }
 
 .component-item {
+  border: 1px solid #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.component-header {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px;
-  border: 1px solid #eee;
-  border-radius: 4px;
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.component-header:hover {
+  background-color: #f5f7fa;
+}
+
+.arrow-icon {
+  margin-left: auto;
+  transition: transform 0.3s;
+}
+
+.arrow-icon.is-expanded {
+  transform: rotate(180deg);
+}
+
+.sub-list {
+  border-top: 1px solid #eee;
+  background-color: #fafafa;
+}
+
+.sub-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 30px;
   cursor: move;
 }
 
-.component-item:hover {
-  background-color: #f5f7fa;
+.sub-item:hover {
+  background-color: #f0f2f5;
 }
 </style> 
