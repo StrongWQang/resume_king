@@ -100,7 +100,15 @@ const handleFileChange = async (event: Event) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'  // 添加跨域支持
     
+    // 添加超时处理
+    const timeout = setTimeout(() => {
+      console.error('Image load timeout:', processedUrl)
+      ElMessage.error('图片加载超时，请重试')
+      img.src = '' // 清除src以触发onerror
+    }, 10000) // 10秒超时
+    
     img.onload = () => {
+      clearTimeout(timeout)
       console.log('Image loaded successfully:', img.width, 'x', img.height)
       imageUrl.value = processedUrl
       emit('image-uploaded', processedUrl, img.width, img.height)
@@ -108,12 +116,36 @@ const handleFileChange = async (event: Event) => {
     }
     
     img.onerror = (e) => {
+      clearTimeout(timeout)
       console.error('Image load error:', e)
       console.error('Failed to load image from URL:', processedUrl)
-      ElMessage.error('图片加载失败，请检查服务器配置和图片 URL')
+      
+      // 尝试使用代理URL
+      const proxyUrl = `/api/proxy/image?url=${encodeURIComponent(processedUrl)}`
+      console.log('Trying proxy URL:', proxyUrl)
+      
+      const proxyImg = new Image()
+      proxyImg.crossOrigin = 'anonymous'
+      
+      proxyImg.onload = () => {
+        console.log('Image loaded successfully through proxy:', proxyImg.width, 'x', proxyImg.height)
+        imageUrl.value = proxyUrl
+        emit('image-uploaded', proxyUrl, proxyImg.width, proxyImg.height)
+        ElMessage.success('图片上传成功')
+      }
+      
+      proxyImg.onerror = (proxyError) => {
+        console.error('Proxy image load error:', proxyError)
+        ElMessage.error('图片加载失败，请检查服务器配置和图片 URL')
+      }
+      
+      proxyImg.src = proxyUrl
     }
     
-    img.src = processedUrl
+    // 添加随机参数防止缓存
+    const timestamp = Date.now()
+    const random = Math.random()
+    img.src = `${processedUrl}?t=${timestamp}&r=${random}`
 
     // 重置 input 值，允许重复上传相同文件
     input.value = ''

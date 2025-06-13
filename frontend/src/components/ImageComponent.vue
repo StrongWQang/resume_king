@@ -23,7 +23,7 @@
       />
       <div v-else class="image-container">
         <img
-          :src="component.imageUrl"
+          :src="getProxyImageUrl(component.imageUrl)"
           class="image"
           :style="{
             width: '100%',
@@ -243,6 +243,15 @@ const triggerFileSelect = async () => {
   }
   
   await tryTriggerUpload()
+}
+
+// 添加获取代理图片URL的方法
+const getProxyImageUrl = (url: string) => {
+  if (!url) return ''
+  // 如果已经是代理URL，直接返回
+  if (url.startsWith('/api/proxy/image')) return url
+  // 否则转换为代理URL
+  return `/api/proxy/image?url=${encodeURIComponent(url)}`
 }
 
 onMounted(() => {
