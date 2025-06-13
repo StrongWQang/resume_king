@@ -96,32 +96,24 @@ const handleFileChange = async (event: Event) => {
     const processedUrl = data.url.startsWith('http') ? data.url : `${window.location.origin}${data.url}`
     console.log('Processed image URL:', processedUrl)
     
-    // 验证图片 URL 是否可访问
-    try {
-      const imgResponse = await fetch(processedUrl, { method: 'HEAD' })
-      if (!imgResponse.ok) {
-        throw new Error(`Image URL not accessible: ${imgResponse.status} ${imgResponse.statusText}`)
-      }
-      console.log('Image URL is accessible')
-    } catch (error) {
-      console.error('Image URL validation failed:', error)
-      ElMessage.warning('图片 URL 可能无法访问，请检查服务器配置')
-    }
-    
-    imageUrl.value = processedUrl
-
+    // 使用 Image 对象加载图片
     const img = new Image()
+    img.crossOrigin = 'anonymous'  // 添加跨域支持
+    
     img.onload = () => {
       console.log('Image loaded successfully:', img.width, 'x', img.height)
+      imageUrl.value = processedUrl
       emit('image-uploaded', processedUrl, img.width, img.height)
+      ElMessage.success('图片上传成功')
     }
+    
     img.onerror = (e) => {
       console.error('Image load error:', e)
       console.error('Failed to load image from URL:', processedUrl)
       ElMessage.error('图片加载失败，请检查服务器配置和图片 URL')
     }
+    
     img.src = processedUrl
-    ElMessage.success('图片上传成功')
 
     // 重置 input 值，允许重复上传相同文件
     input.value = ''

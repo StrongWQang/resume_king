@@ -39,22 +39,34 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
     
     // 添加重试机制
     let retryCount = 0
-    const maxRetries = 2
+    const maxRetries = 3
+    const retryDelay = 1000 // 1秒后重试
     
     const tryLoadImage = () => {
-      img.onload = () => resolve(img)
-      img.onerror = () => {
+      img.onload = () => {
+        console.log('Image loaded successfully:', url)
+        resolve(img)
+      }
+      
+      img.onerror = (error) => {
+        console.error('Image load error:', error)
         if (retryCount < maxRetries) {
           retryCount++
           console.log(`图片加载失败，正在进行第${retryCount}次重试...`)
-          // 添加时间戳防止缓存
-          img.src = `${url}?t=${Date.now()}`
+          // 添加随机参数防止缓存
+          const timestamp = Date.now()
+          const random = Math.random()
+          img.src = `${url}?t=${timestamp}&r=${random}`
         } else {
-          reject(new Error(`Failed to load image: ${url}`))
+          console.error(`图片加载失败，已达到最大重试次数: ${url}`)
+          reject(new Error(`Failed to load image after ${maxRetries} retries: ${url}`))
         }
       }
-      // 添加时间戳防止缓存
-      img.src = `${url}?t=${Date.now()}`
+      
+      // 添加随机参数防止缓存
+      const timestamp = Date.now()
+      const random = Math.random()
+      img.src = `${url}?t=${timestamp}&r=${random}`
     }
     
     tryLoadImage()
