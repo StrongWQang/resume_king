@@ -72,6 +72,7 @@ import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useResumeStore } from '../store/resume'
 import { UploadFilled, ArrowDown } from '@element-plus/icons-vue'
+import { exportPDF } from '../utils/export'
 
 const store = useResumeStore()
 const loadDialogVisible = ref(false)
@@ -110,27 +111,17 @@ const handleExport = async () => {
     // 确保所有组件数据都是最新的
     store.updateSelectedComponent()
     
-    const response = await fetch('/api/resumes/download-pdf', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(store.components)
-    })
+    // 导出PDF
+    const pdfUrl = await exportPDF(store.components)
     
-    if (!response.ok) {
-      throw new Error('导出失败')
-    }
-    
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
+    // 下载PDF
     const a = document.createElement('a')
-    a.href = url
+    a.href = pdfUrl
     a.download = 'resume.pdf'
     document.body.appendChild(a)
     a.click()
-    window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
+    URL.revokeObjectURL(pdfUrl)
     
     ElMessage.success('导出成功')
   } catch (error) {
@@ -220,16 +211,6 @@ const beforeImportUpload = (file: File) => {
   return isJSON
 }
 
-// 添加新简历按钮处理函数
-const handleNewResume = async () => {
-  try {
-    const id = await store.saveResume()
-    ElMessage.success(`新简历创建成功，ID：${id}`)
-  } catch (error) {
-    ElMessage.error('创建新简历失败')
-  }
-}
-
 // 添加导入命令处理函数
 const handleImportCommand = (command: string) => {
   switch (command) {
@@ -242,7 +223,7 @@ const handleImportCommand = (command: string) => {
   }
 }
 
-// 添加导出命令处理函数
+// 修改导出命令处理函数
 const handleExportCommand = (command: string) => {
   switch (command) {
     case 'pdf':

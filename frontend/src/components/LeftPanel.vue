@@ -2,9 +2,20 @@
   <div class="left-panel">
     <div class="panel-title">组件</div>
     <div class="template-button">
-      <el-button type="primary" @click="useTemplate" size="large" style="width: 100%">
-        使用简历模板
-      </el-button>
+      <el-dropdown @command="handleTemplateSelect" style="width: 100%">
+        <el-button type="primary" size="large" style="width: 100%">
+          使用简历模板
+          <el-icon class="el-icon--right"><arrow-down /></el-icon>
+        </el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="default">默认模板</el-dropdown-item>
+            <el-dropdown-item command="modern">简约现代风格</el-dropdown-item>
+            <el-dropdown-item command="creative">创意设计风格</el-dropdown-item>
+            <el-dropdown-item command="professional">专业商务风格</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
     <div class="component-list">
       <div
@@ -46,10 +57,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Document, Picture, List, User, ArrowDown, Minus } from '@element-plus/icons-vue'
+import { Document, Picture, ArrowDown, Minus } from '@element-plus/icons-vue'
 import { useResumeStore } from '../store/resume'
-import { createResumeTemplate } from '../store/resume'
-import { ElMessage } from 'element-plus'
+import { 
+  createDefaultTemplate,
+  createModernTemplate,
+  createCreativeTemplate,
+  createProfessionalTemplate 
+} from '../template'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const store = useResumeStore()
 const expandedItems = ref<string[]>([])
@@ -79,15 +95,15 @@ const components = [
   //     { type: 'list-number', label: '数字列表', icon: List }
   //   ]
   // },
-  { 
-    type: 'profile', 
-    label: '个人信息', 
-    icon: User,
-    subItems: [
-      { type: 'profile-basic', label: '基础信息', icon: User },
-      { type: 'profile-contact', label: '联系方式', icon: User }
-    ]
-  },
+  // {
+  //   type: 'profile',
+  //   label: '个人信息',
+  //   icon: User,
+  //   subItems: [
+  //     { type: 'profile-basic', label: '基础信息', icon: User },
+  //     { type: 'profile-contact', label: '联系方式', icon: User }
+  //   ]
+  // },
   {
     type: 'divider',
     label: '分隔线',
@@ -116,15 +132,42 @@ const handleDragStart = (event: DragEvent, item: any) => {
   }
 }
 
-const useTemplate = () => {
+const handleTemplateSelect = async (command: string) => {
   // 检查是否已有内容
   if (store.components.length > 0) {
-    ElMessage.warning('当前简历已有内容，使用模板将覆盖现有内容')
-    return
+    try {
+      await ElMessageBox.confirm(
+        '当前简历已有内容，使用模板将覆盖现有内容，是否继续？',
+        '提示',
+        {
+          confirmButtonText: '确认',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+    } catch {
+      // 用户点击取消
+      return
+    }
   }
   
-  // 获取模板组件
-  const templateComponents = createResumeTemplate()
+  let templateComponents
+  switch (command) {
+    case 'default':
+      templateComponents = createDefaultTemplate()
+      break
+    case 'modern':
+      templateComponents = createModernTemplate()
+      break
+    case 'creative':
+      templateComponents = createCreativeTemplate()
+      break
+    case 'professional':
+      templateComponents = createProfessionalTemplate()
+      break
+    default:
+      templateComponents = createDefaultTemplate()
+  }
   
   // 设置到简历中
   store.setComponents(templateComponents)

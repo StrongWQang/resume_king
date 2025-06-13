@@ -406,6 +406,28 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return
   }
   
+  // 处理复制快捷键
+  if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
+    event.preventDefault()
+    if (store.selectedComponent) {
+      handleCopyComponent()
+    }
+    return
+  }
+
+  // 处理撤销快捷键
+  if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+    event.preventDefault()
+    if (event.shiftKey) {
+      // Command/Ctrl + Shift + Z 重做
+      store.redo()
+    } else {
+      // Command/Ctrl + Z 撤销
+      store.undo()
+    }
+    return
+  }
+  
   if (event.key === 'Delete' || event.key === 'Backspace') {
     // 检查是否是文本组件且有内容
     if (store.selectedComponent?.type.startsWith('text-') && 
@@ -419,6 +441,30 @@ const handleKeyDown = (event: KeyboardEvent) => {
     store.deleteSelectedComponent()
     renderCanvas()
   }
+}
+
+// 添加复制组件的方法
+const handleCopyComponent = () => {
+  if (!store.selectedComponent) return
+  
+  // 创建组件的深拷贝
+  const copiedComponent = JSON.parse(JSON.stringify(store.selectedComponent))
+  
+  // 生成新的ID
+  copiedComponent.id = Date.now().toString()
+  
+  // 稍微偏移位置，避免完全重叠
+  copiedComponent.x += 10
+  copiedComponent.y += 10
+  
+  // 添加到store中
+  store.addComponent(copiedComponent)
+  
+  // 选中新复制的组件
+  store.selectComponent(copiedComponent.id)
+  
+  // 重新渲染画布
+  renderCanvas()
 }
 
 const handleCanvasClick = (event: MouseEvent) => {

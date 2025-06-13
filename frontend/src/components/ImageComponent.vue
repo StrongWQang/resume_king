@@ -128,9 +128,6 @@ const handleMouseMove = (e: MouseEvent) => {
   
   const dx = e.clientX - startX.value
   const dy = e.clientY - startY.value
-  
-  console.log('拖动中，位移:', dx, dy)
-  
   // 直接更新组件位置（不使用 store 方法，直接修改）
   const newX = props.component.x + dx
   const newY = props.component.y + dy
