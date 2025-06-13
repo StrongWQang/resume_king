@@ -7,8 +7,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/resume_king?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
-    password: a190fb240ae45e5d
-
+    password: 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.example.resumebuilder.entity
@@ -17,8 +16,4 @@ mybatis:
 
 aliyun:
   oss:
-    endpoint: oss-cn-beijing.aliyuncs.com
-    accessKeyId: LTAI5t7Vr2TX5KzUtorBufb4
-    accessKeySecret: cic32QP7wzZm8UdqzKngFod00h9BED
-    bucketName: web-oss-learn
-    urlPrefix: https://web-oss-learn.oss-cn-beijing.aliyuncs.com/ 
+    
