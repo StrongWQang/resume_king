@@ -30,6 +30,7 @@
             height: '100%',
             objectFit: 'contain'
           }"
+          @error="handleImageError"
         />
       </div>
     </div>
@@ -68,6 +69,7 @@ const startY = ref(0)
 const startWidth = ref(0)
 const startHeight = ref(0)
 const uploaderRef = ref<InstanceType<typeof ImageUploader> | null>(null)
+const imageLoadErrors = ref(new Set<string>())
 
 // 监听选中状态变化
 watch(() => store.selectedComponentId, (newId) => {
@@ -252,6 +254,31 @@ const getProxyImageUrl = (url: string) => {
   if (url.startsWith('/api/proxy/image')) return url
   // 否则转换为代理URL
   return `/api/proxy/image?url=${encodeURIComponent(url)}`
+}
+
+const handleImageError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  const imgUrl = img.src
+  
+  if (imageLoadErrors.value.has(imgUrl)) {
+    return
+  }
+  
+  imageLoadErrors.value.add(imgUrl)
+  
+  console.error('图片加载失败:', {
+    src: img.src,
+    alt: img.alt,
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight
+  })
+  
+  // 使用全局默认图片
+  img.src = '/src/template/default.png'
+  
+  // 添加错误样式
+  img.style.border = '1px solid #ff4d4f'
+  img.style.backgroundColor = '#fff2f0'
 }
 
 onMounted(() => {

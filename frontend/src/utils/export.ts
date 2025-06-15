@@ -59,7 +59,9 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
           img.src = `${url}?t=${timestamp}&r=${random}`
         } else {
           console.error(`图片加载失败，已达到最大重试次数: ${url}`)
-          reject(new Error(`Failed to load image after ${maxRetries} retries: ${url}`))
+          // 使用默认图片
+          img.src = '/src/template/default.png'
+          resolve(img)
         }
       }
       
