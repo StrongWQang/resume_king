@@ -1,6 +1,6 @@
 <template>
   <header class="header">
-    <div class="logo">简历制作</div>
+    <div class="logo" @click="handleLogoClick" title="github链接 点击后跳转">Resume_King 简历王</div>
     <div class="actions">
       <el-button type="primary" @click="handleSave">保存</el-button>
       <el-button type="danger" @click="handleClear">清空</el-button>
@@ -254,26 +254,116 @@ const handleClear = () => {
       ElMessage.info('已取消清空操作')
     })
 }
+
+const handleLogoClick = () => {
+  window.open('https://github.com/StrongWQang/resume_king', '_blank')
+}
 </script>
 
 <style scoped>
 .header {
-  height: 60px;
-  padding: 0 20px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #eee;
+  align-items: center;
+  padding: 0 20px;
+  height: 60px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 12px rgba(76, 175, 80, 0.08);
+  border-bottom: 1px solid #e8f5e9;
 }
 
 .logo {
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 600;
+  color: #2e7d32;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 8px 15px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+  color: #4caf50;
+  background-color: #f1f8e9;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.15);
 }
 
 .actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+}
+
+:deep(.el-button) {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-button--primary) {
+  background-color: #4caf50;
+  border-color: #4caf50;
+}
+
+:deep(.el-button--primary:hover) {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+:deep(.el-button--danger) {
+  background-color: #ffffff;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+:deep(.el-button--danger:hover) {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+}
+
+:deep(.el-button--success) {
+  background-color: #ffffff;
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+:deep(.el-button--success:hover) {
+  background-color: #4caf50;
+  border-color: #4caf50;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+:deep(.el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--success)) {
+  background-color: #ffffff;
+  border-color: #e8f5e9;
+  color: #4caf50;
+}
+
+:deep(.el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--success):hover) {
+  color: #2e7d32;
+  border-color: #4caf50;
+  background-color: #f1f8e9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.15);
+}
+
+:deep(.el-dropdown-menu) {
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(76, 175, 80, 0.1);
+  border: 1px solid #e8f5e9;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background-color: #f1f8e9;
+  color: #4caf50;
 }
 
 .dialog-footer {
@@ -285,5 +375,39 @@ const handleClear = () => {
 
 .upload-demo {
   width: 100%;
+}
+
+:deep(.el-dialog) {
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.1);
+}
+
+:deep(.el-dialog__header) {
+  border-bottom: 1px solid #e8f5e9;
+  padding: 15px 20px;
+}
+
+:deep(.el-dialog__title) {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+:deep(.el-upload-dragger) {
+  border: 2px dashed #e8f5e9;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-upload-dragger:hover) {
+  border-color: #4caf50;
+  background-color: #f1f8e9;
+}
+
+:deep(.el-upload__text) {
+  color: #4caf50;
+}
+
+:deep(.el-upload__tip) {
+  color: #2e7d32;
 }
 </style> 

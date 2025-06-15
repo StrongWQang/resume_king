@@ -255,11 +255,12 @@ const applyFontToAll = () => {
 <style scoped>
 .right-panel {
   width: 300px;
-  border-left: 1px solid #eee;
+  border-left: 1px solid #e8f5e9;
   padding: 20px;
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
+  background-color: #ffffff;
 }
 
 .panel-title {
@@ -268,9 +269,11 @@ const applyFontToAll = () => {
   margin-bottom: 20px;
   position: sticky;
   top: 0;
-  background-color: white;
+  background-color: #ffffff;
   padding: 10px 0;
   z-index: 1;
+  color: #2e7d32;
+  border-bottom: 1px solid #e8f5e9;
 }
 
 .position-inputs,
@@ -287,11 +290,20 @@ const applyFontToAll = () => {
 .position-inputs :deep(.el-input__wrapper),
 .size-inputs :deep(.el-input__wrapper) {
   padding: 0 8px;
+  border-color: #e8f5e9;
+  transition: all 0.3s ease;
+}
+
+.position-inputs :deep(.el-input__wrapper:hover),
+.size-inputs :deep(.el-input__wrapper:hover) {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 1px #4caf50;
 }
 
 .position-inputs :deep(.el-input__inner),
 .size-inputs :deep(.el-input__inner) {
   text-align: center;
+  color: #2e7d32;
 }
 
 .font-controls {
@@ -301,60 +313,147 @@ const applyFontToAll = () => {
 }
 
 .no-selection {
-  color: #999;
+  color: #4caf50;
   text-align: center;
   margin-top: 20px;
+  font-size: 14px;
 }
 
-/* 添加滚动条样式 */
+/* 滚动条样式 */
 .right-panel::-webkit-scrollbar {
   width: 6px;
 }
 
 .right-panel::-webkit-scrollbar-thumb {
-  background-color: #dcdfe6;
+  background-color: #e8f5e9;
   border-radius: 3px;
 }
 
-.right-panel::-webkit-scrollbar-track {
-  background-color: #f5f7fa;
+.right-panel::-webkit-scrollbar-thumb:hover {
+  background-color: #4caf50;
 }
 
-/* 确保表单项有足够的间距 */
+.right-panel::-webkit-scrollbar-track {
+  background-color: #f1f8e9;
+}
+
+/* 表单项样式 */
 :deep(.el-form-item) {
   margin-bottom: 20px;
 }
 
-/* 确保输入框和选择器有合适的宽度 */
+:deep(.el-form-item__label) {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+/* 输入框和选择器样式 */
 :deep(.el-input),
 :deep(.el-select) {
   width: 100%;
 }
 
-/* 确保颜色选择器有合适的宽度 */
+:deep(.el-input__wrapper),
+:deep(.el-select__wrapper) {
+  border-color: #e8f5e9;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper:hover),
+:deep(.el-select__wrapper:hover) {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 1px #4caf50;
+}
+
+:deep(.el-input__inner) {
+  color: #2e7d32;
+}
+
+/* 颜色选择器样式 */
 :deep(.el-color-picker) {
   width: 100%;
 }
 
-/* 确保滑块有合适的宽度 */
+:deep(.el-color-picker__trigger) {
+  border-color: #e8f5e9;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-color-picker__trigger:hover) {
+  border-color: #4caf50;
+}
+
+/* 滑块样式 */
 :deep(.el-slider) {
   width: 100%;
 }
 
-/* 确保文本域有合适的宽度和高度 */
-:deep(.el-textarea__inner) {
-  min-height: 80px;
+:deep(.el-slider__bar) {
+  background-color: #4caf50;
 }
 
-/* 确保单选按钮组有合适的宽度 */
+:deep(.el-slider__button) {
+  border-color: #4caf50;
+}
+
+:deep(.el-slider__button:hover) {
+  transform: scale(1.2);
+}
+
+/* 文本域样式 */
+:deep(.el-textarea__inner) {
+  min-height: 80px;
+  border-color: #e8f5e9;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: #4caf50;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 1px #4caf50;
+}
+
+/* 单选按钮组样式 */
 :deep(.el-radio-group) {
   width: 100%;
   display: flex;
   justify-content: space-between;
 }
 
-/* 确保数字输入框有合适的宽度 */
+:deep(.el-radio-button__inner) {
+  border-color: #e8f5e9;
+  color: #2e7d32;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-radio-button__inner:hover) {
+  color: #4caf50;
+  background-color: #f1f8e9;
+}
+
+:deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background-color: #4caf50;
+  border-color: #4caf50;
+  box-shadow: -1px 0 0 0 #4caf50;
+}
+
+/* 数字输入框样式 */
 :deep(.el-input-number) {
   width: 100%;
+}
+
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase) {
+  border-color: #e8f5e9;
+  color: #4caf50;
+}
+
+:deep(.el-input-number__decrease:hover),
+:deep(.el-input-number__increase:hover) {
+  color: #2e7d32;
+  background-color: #f1f8e9;
 }
 </style>

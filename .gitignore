@@ -30,4 +30,7 @@ yarn-error.log*
 *.tmp
 *.temp
 .cache/
+
+# 忽略 Java 编译文件
 *.class
+**/*.class

@@ -546,7 +546,7 @@ const handleResizeEnd = () => {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: #f0f2f5;
+  background-color: #f1f8e9;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -556,8 +556,8 @@ const handleResizeEnd = () => {
 .resume-canvas {
   width: 595px;
   height: 842px;
-  background-color: white;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  box-shadow: 0 2px 12px 0 rgba(76, 175, 80, 0.1);
   position: relative;
   transform-origin: top left;
   transform: scale(1);
@@ -572,15 +572,15 @@ const handleResizeEnd = () => {
   user-select: none;
   touch-action: none;
   z-index: 1;
-  background-color: rgba(0, 0, 0, 0.01);
+  background-color: rgba(76, 175, 80, 0.01);
 }
 
 .text-component:hover {
-  border-color: #409eff;
+  border-color: #4caf50;
 }
 
 .text-component.selected {
-  border-color: #409eff;
+  border-color: #4caf50;
   border-width: 2px;
 }
 
@@ -601,7 +601,7 @@ const handleResizeEnd = () => {
 }
 
 .divider-component:hover {
-  border-color: #409eff;
+  border-color: #4caf50;
 }
 
 .divider-line {
@@ -612,22 +612,25 @@ const handleResizeEnd = () => {
 /* 实线样式 */
 .divider-solid .divider-line {
   border-bottom-style: solid;
+  border-color: #4caf50;
 }
 
 /* 虚线样式 */
 .divider-dashed .divider-line {
   border-bottom-style: dashed;
+  border-color: #4caf50;
 }
 
 /* 点线样式 */
 .divider-dotted .divider-line {
   border-bottom-style: dotted;
+  border-color: #4caf50;
 }
 
 /* 渐变线样式 */
 .divider-gradient .divider-line {
   height: 2px;
-  background: linear-gradient(to right, transparent, #409eff, transparent);
+  background: linear-gradient(to right, transparent, #4caf50, transparent);
   border: none;
 }
 
@@ -638,7 +641,7 @@ const handleResizeEnd = () => {
   bottom: -5px;
   width: 10px;
   height: 10px;
-  background-color: #409eff;
+  background-color: #4caf50;
   border-radius: 50%;
   cursor: se-resize;
   z-index: 10;
@@ -646,7 +649,7 @@ const handleResizeEnd = () => {
 }
 
 .resize-handle:hover {
-  background-color: #66b1ff;
+  background-color: #2e7d32;
 }
 
 /* 对齐辅助线样式 */

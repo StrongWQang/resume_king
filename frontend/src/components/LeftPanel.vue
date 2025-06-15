@@ -179,18 +179,30 @@ const handleTemplateSelect = async (command: string) => {
 <style scoped>
 .left-panel {
   width: 200px;
-  border-right: 1px solid #eee;
+  border-right: 1px solid #e8f5e9;
   padding: 20px;
+  background-color: #ffffff;
 }
 
 .panel-title {
   font-size: 16px;
   font-weight: bold;
   margin-bottom: 20px;
+  color: #2e7d32;
 }
 
 .template-button {
   margin-bottom: 20px;
+}
+
+.template-button :deep(.el-button--primary) {
+  background-color: #4caf50;
+  border-color: #4caf50;
+}
+
+.template-button :deep(.el-button--primary:hover) {
+  background-color: #43a047;
+  border-color: #43a047;
 }
 
 .component-list {
@@ -200,27 +212,34 @@ const handleTemplateSelect = async (command: string) => {
 }
 
 .component-item {
-  border: 1px solid #eee;
-  border-radius: 4px;
+  border: 1px solid #e8f5e9;
+  border-radius: 6px;
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.component-item:hover {
+  box-shadow: 0 2px 12px 0 rgba(76, 175, 80, 0.1);
 }
 
 .component-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px;
+  padding: 12px;
   cursor: pointer;
-  background-color: #fff;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
 }
 
 .component-header:hover {
-  background-color: #f5f7fa;
+  background-color: #f1f8e9;
 }
 
 .arrow-icon {
   margin-left: auto;
   transition: transform 0.3s;
+  color: #4caf50;
 }
 
 .arrow-icon.is-expanded {
@@ -228,7 +247,7 @@ const handleTemplateSelect = async (command: string) => {
 }
 
 .sub-list {
-  border-top: 1px solid #eee;
+  border-top: 1px solid #e8f5e9;
   background-color: #fafafa;
 }
 
@@ -236,11 +255,20 @@ const handleTemplateSelect = async (command: string) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px 8px 30px;
+  padding: 10px 12px 10px 32px;
   cursor: move;
+  transition: all 0.3s ease;
 }
 
 .sub-item:hover {
-  background-color: #f0f2f5;
+  background-color: #f1f8e9;
+}
+
+.sub-item .el-icon {
+  color: #4caf50;
+}
+
+.component-header .el-icon {
+  color: #4caf50;
 }
 </style> 
