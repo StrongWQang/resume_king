@@ -178,35 +178,48 @@ onMounted(() => {
 const handleDrop = async (event: DragEvent) => {
   if (!event.dataTransfer) return
   
-  const componentType = event.dataTransfer.getData('componentType')
   const rect = canvasRef.value?.getBoundingClientRect()
   
   if (rect) {
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
     
+    // 尝试解析拖拽数据
+    let dragData
+    try {
+      const jsonData = event.dataTransfer.getData('application/json')
+      if (jsonData) {
+        dragData = JSON.parse(jsonData)
+      }
+    } catch (e) {
+      console.log('不是JSON数据，使用普通组件类型')
+    }
+    
     // 添加新组件到 store
     const newComponent = {
       id: Date.now().toString(),
-      type: componentType,
+      type: dragData?.type || event.dataTransfer.getData('componentType'),
       x,
       y,
-      width: componentType.startsWith('divider-') ? 400 : (componentType === 'image' ? 200 : 120),
-      height: componentType.startsWith('divider-') ? 20 : (componentType === 'image' ? 200 : 30),
-      content: componentType.startsWith('text-') ? getDefaultTextContent(componentType) : undefined,
+      width: dragData?.type === 'image' ? 200 : (event.dataTransfer.getData('componentType').startsWith('divider-') ? 400 : 120),
+      height: dragData?.type === 'image' ? 200 : (event.dataTransfer.getData('componentType').startsWith('divider-') ? 20 : 30),
+      content: event.dataTransfer.getData('componentType').startsWith('text-') ? getDefaultTextContent(event.dataTransfer.getData('componentType')) : undefined,
       // 添加文本相关属性
-      fontSize: componentType.startsWith('text-') ? getDefaultFontSize(componentType) : undefined,
-      fontFamily: componentType.startsWith('text-') ? 'Microsoft YaHei' : undefined,
-      color: componentType.startsWith('text-') ? '#333333' : undefined,
-      fontWeight: componentType.startsWith('text-') ? getDefaultFontWeight(componentType) : undefined,
-      lineHeight: componentType.startsWith('text-') ? getDefaultLineHeight(componentType) : undefined,
-      textAlign: componentType.startsWith('text-') ? 'left' : undefined
+      fontSize: event.dataTransfer.getData('componentType').startsWith('text-') ? getDefaultFontSize(event.dataTransfer.getData('componentType')) : undefined,
+      fontFamily: event.dataTransfer.getData('componentType').startsWith('text-') ? 'Microsoft YaHei' : undefined,
+      color: event.dataTransfer.getData('componentType').startsWith('text-') ? '#333333' : undefined,
+      fontWeight: event.dataTransfer.getData('componentType').startsWith('text-') ? getDefaultFontWeight(event.dataTransfer.getData('componentType')) : undefined,
+      lineHeight: event.dataTransfer.getData('componentType').startsWith('text-') ? getDefaultLineHeight(event.dataTransfer.getData('componentType')) : undefined,
+      textAlign: event.dataTransfer.getData('componentType').startsWith('text-') ? 'left' : undefined,
+      // 如果是图片组件，添加图片URL
+      imageUrl: dragData?.imageUrl,
+      imageAlt: dragData?.imageAlt
     }
     
     store.addComponent(newComponent)
     
-    // 如果是图片组件，自动触发文件选择
-    if (componentType === 'image') {
+    // 如果是图片组件且没有图片URL，自动触发文件选择
+    if (newComponent.type === 'image' && !newComponent.imageUrl) {
       // 添加重试机制
       let retryCount = 0
       const maxRetries = 3

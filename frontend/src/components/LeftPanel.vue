@@ -44,15 +44,42 @@
           v-if="expandedItems.includes(item.type)"
           class="sub-list"
         >
+          <div v-if="item.type === 'company-logo'" class="logo-search-container">
+            <el-input
+              v-model="logoSearchKeyword"
+              placeholder="搜索公司名称"
+              clearable
+              size="small"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
           <div
             v-for="subItem in item.subItems"
-            :key="subItem.type"
+            :key="subItem.type + (subItem.logoUrl || '')"
             class="sub-item"
             draggable="true"
-            @dragstart="handleDragStart($event, subItem)"
+            @dragstart="handleLogoDragStart($event, subItem)"
           >
-            <el-icon><component :is="subItem.icon" /></el-icon>
+            <template v-if="subItem.type === 'company-logo-item'">
+              <div class="logo-preview">
+                <img 
+                  :src="subItem.logoUrl" 
+                  :alt="subItem.label"
+                  class="logo-preview-image"
+                  @error="handleImageError"
+                />
+              </div>
+            </template>
+            <template v-else>
+              <el-icon><component :is="subItem.icon" /></el-icon>
+            </template>
             <span>{{ subItem.label }}</span>
+          </div>
+          <div v-if="item.type === 'company-logo' && item.subItems.length === 0" class="no-data">
+            暂无数据
           </div>
         </div>
       </div>
@@ -114,11 +141,69 @@
       </div>
     </div>
   </div>
+
+  <!-- Logo选择对话框 -->
+  <el-dialog
+    v-model="logoDialogVisible"
+    title="选择公司Logo"
+    width="500px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+  >
+    <div class="logo-search">
+      <el-input
+        v-model="logoSearchKeyword"
+        placeholder="搜索公司名称"
+        clearable
+        @clear="handleLogoSearch"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+    </div>
+    
+    <div v-loading="logoLoading" class="logo-grid">
+      <template v-if="companyLogos.length > 0">
+        <div
+          v-for="logo in companyLogos"
+          :key="logo.id"
+          class="logo-item"
+          draggable="true"
+          @dragstart="handleLogoDragStart($event, logo)"
+        >
+          <div class="logo-image-container">
+            <img
+              :src="logo.url"
+              :alt="logo.name"
+              class="logo-image"
+              @error="handleImageError"
+              @load="handleImageLoad"
+            />
+          </div>
+          <div class="logo-name">{{ logo.name }}</div>
+        </div>
+      </template>
+      <div v-else class="no-data">
+        暂无数据
+      </div>
+    </div>
+    
+    <div class="logo-pagination">
+      <el-pagination
+        v-model:current-page="logoCurrentPage"
+        :page-size="logoPageSize"
+        :total="totalLogos"
+        @current-change="fetchCompanyLogos"
+        layout="prev, pager, next"
+      />
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Document, Picture, ArrowDown, Minus } from '@element-plus/icons-vue'
+import { ref, onMounted, watch, computed } from 'vue'
+import { Document, Picture, ArrowDown, Minus, Search } from '@element-plus/icons-vue'
 import { useResumeStore } from '../store/resume'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
@@ -136,6 +221,23 @@ const imageLoadErrors = ref(new Set())
 // 存储所有模板数据
 const templatesData = ref<Record<string, any>>({})
 
+// 存储所有公司logo数据
+const allCompanyLogos = ref<any[]>([])
+const logoSearchKeyword = ref('')
+const logoLoading = ref(false)
+
+// 根据搜索关键词过滤logo
+const filteredCompanyLogos = computed(() => {
+  if (!logoSearchKeyword.value) {
+    return allCompanyLogos.value
+  }
+  
+  const keyword = logoSearchKeyword.value.toLowerCase()
+  return allCompanyLogos.value.filter(logo => 
+    logo.name.toLowerCase().includes(keyword)
+  )
+})
+
 const components = [
   { 
     type: 'text', 
@@ -152,24 +254,12 @@ const components = [
     label: '图片', 
     icon: Picture,
   },
-  // {
-  //   type: 'list',
-  //   label: '列表',
-  //   icon: List,
-  //   subItems: [
-  //     { type: 'list-bullet', label: '项目符号列表', icon: List },
-  //     { type: 'list-number', label: '数字列表', icon: List }
-  //   ]
-  // },
-  // {
-  //   type: 'profile',
-  //   label: '个人信息',
-  //   icon: User,
-  //   subItems: [
-  //     { type: 'profile-basic', label: '基础信息', icon: User },
-  //     { type: 'profile-contact', label: '联系方式', icon: User }
-  //   ]
-  // },
+  {
+    type: 'company-logo',
+    label: '公司Logo',
+    icon: Picture,
+    subItems: [] // 将在获取数据后动态填充
+  },
   {
     type: 'divider',
     label: '分隔线',
@@ -194,6 +284,11 @@ const toggleSubList = (type: string) => {
 
 const handleDragStart = (event: DragEvent, item: any) => {
   if (event.dataTransfer) {
+    if (item.type === 'company-logo') {
+      // 如果是公司logo组件，阻止默认拖拽
+      event.preventDefault()
+      return
+    }
     event.dataTransfer.setData('componentType', item.type)
   }
 }
@@ -240,15 +335,9 @@ const templates = [
 // 处理图片URL
 const getImageUrl = (src: string) => {
   if (!src) return ''
-  // 如果已经是完整的URL，使用代理URL
-  if (src.startsWith('http://') || src.startsWith('https://')) {
-    return `/api/proxy/image?url=${encodeURIComponent(src)}`
-  }
-  // 添加日志记录
   console.log('处理图片URL:', src)
-  const fullUrl = `${src}`
-  console.log('完整图片URL:', fullUrl)
-  return fullUrl
+  // 直接返回原始URL
+  return src
 }
 
 // 处理模板数据中的图片URL
@@ -286,9 +375,10 @@ const loadTemplatesData = async () => {
   }
 }
 
-// 组件挂载时加载模板数据
+// 组件挂载时加载模板数据和logo数据
 onMounted(() => {
   loadTemplatesData()
+  fetchAllCompanyLogos() // 加载所有logo数据
 })
 
 const handlePreview = (templateId: string, event: MouseEvent) => {
@@ -339,18 +429,188 @@ const handleImageError = (e: Event) => {
   
   console.error('图片加载失败:', {
     src: img.src,
-    alt: img.alt,
-    naturalWidth: img.naturalWidth,
-    naturalHeight: img.naturalHeight
+    alt: img.alt
   })
   
-  // 使用全局默认图片
-  img.src = '/src/template/default.png'
+  // 使用默认图片
+  img.src = '/src/assets/default-logo.png'
   
   // 添加错误样式
   img.style.border = '1px solid #ff4d4f'
   img.style.backgroundColor = '#fff2f0'
 }
+
+// 处理图片加载成功
+const handleImageLoad = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  console.log('图片加载成功:', img.src)
+}
+
+// 添加公司logo相关的状态
+const companyLogos = ref([])
+const logoCurrentPage = ref(1)
+const logoPageSize = 9
+const logoDialogVisible = ref(false)
+const totalLogos = ref(0)  // 添加总数状态
+
+// 处理logo数据中的图片URL
+const processLogoData = (data: any[]) => {
+  console.log('处理前的logo数据:', data)
+  const processed = data.map(logo => ({
+    ...logo,
+    url: getImageUrl(logo.url)
+  }))
+  console.log('处理后的logo数据:', processed)
+  return processed
+}
+
+// 获取公司logo列表
+const fetchCompanyLogos = async () => {
+  try {
+    logoLoading.value = true
+    const response = await axios.get('/api/logo', {
+      params: {
+        name: logoSearchKeyword.value,
+        page: logoCurrentPage.value,
+        size: logoPageSize
+      }
+    })
+    const { records, total } = response.data
+    console.log('获取到的logo数据:', records)
+    // 处理logo数据中的图片URL
+    companyLogos.value = processLogoData(records)
+    // 更新公司logo组件的子项
+    const companyLogoComponent = components.find(c => c.type === 'company-logo')
+    if (companyLogoComponent) {
+      companyLogoComponent.subItems = records.map(logo => ({
+        type: 'company-logo-item',
+        label: logo.name,
+        icon: Picture,
+        logoUrl: logo.url,
+        isCompanyLogo: true // 标记这是公司logo
+      }))
+    }
+    totalLogos.value = total
+  } catch (error) {
+    console.error('获取公司logo失败:', error)
+    ElMessage.error('获取公司logo失败')
+  } finally {
+    logoLoading.value = false
+  }
+}
+
+// 处理logo搜索
+const handleLogoSearch = () => {
+  // 重置页码
+  logoCurrentPage.value = 1
+  // 获取公司logo列表
+  fetchCompanyLogos()
+}
+
+// 处理logo拖拽
+const handleLogoDragStart = (event: DragEvent, item: any) => {
+  if (event.dataTransfer) {
+    if (item.type === 'company-logo-item') {
+      // 设置拖拽数据
+      const dragData = {
+        type: 'image',
+        imageUrl: item.logoUrl,
+        imageAlt: item.label,
+        isCompanyLogo: true // 标记这是公司logo
+      }
+      event.dataTransfer.setData('application/json', JSON.stringify(dragData))
+      // 设置拖拽效果
+      event.dataTransfer.effectAllowed = 'copy'
+      
+      // 创建固定大小的预览图
+      const img = new Image()
+      img.src = item.logoUrl
+      img.onload = () => {
+        // 创建一个canvas来调整图片大小
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        const size = 100 // 设置统一的预览图大小
+        
+        // 计算缩放比例，保持宽高比
+        const scale = Math.min(size / img.width, size / img.height)
+        const width = img.width * scale
+        const height = img.height * scale
+        
+        // 设置canvas大小
+        canvas.width = size
+        canvas.height = size
+        
+        // 在canvas中央绘制图片
+        if (ctx) {
+          ctx.fillStyle = '#ffffff' // 设置白色背景
+          ctx.fillRect(0, 0, size, size)
+          ctx.drawImage(
+            img,
+            (size - width) / 2,
+            (size - height) / 2,
+            width,
+            height
+          )
+        }
+        
+        // 使用canvas作为拖拽预览图
+        event.dataTransfer.setDragImage(canvas, size / 2, size / 2)
+      }
+    } else {
+      event.dataTransfer.setData('componentType', item.type)
+    }
+  }
+}
+
+// 打开logo选择对话框
+const openLogoDialog = () => {
+  logoDialogVisible.value = true
+  console.log('打开logo对话框')
+  fetchCompanyLogos()
+}
+
+// 获取所有公司logo数据
+const fetchAllCompanyLogos = async () => {
+  try {
+    logoLoading.value = true
+    // 获取第一页数据
+    const response = await axios.get('/api/logo', {
+      params: {
+        page: 1,
+        size: 1000 // 设置一个较大的值以获取所有数据
+      }
+    })
+    const { records } = response.data
+    // 处理logo数据中的图片URL
+    allCompanyLogos.value = processLogoData(records)
+    // 更新公司logo组件的子项
+    updateCompanyLogoSubItems()
+  } catch (error) {
+    console.error('获取公司logo失败:', error)
+    ElMessage.error('获取公司logo失败')
+  } finally {
+    logoLoading.value = false
+  }
+}
+
+// 更新公司logo组件的子项
+const updateCompanyLogoSubItems = () => {
+  const companyLogoComponent = components.find(c => c.type === 'company-logo')
+  if (companyLogoComponent) {
+    companyLogoComponent.subItems = filteredCompanyLogos.value.map(logo => ({
+      type: 'company-logo-item',
+      label: logo.name,
+      icon: Picture,
+      logoUrl: logo.url,
+      isCompanyLogo: true
+    }))
+  }
+}
+
+// 监听搜索关键词变化
+watch(logoSearchKeyword, () => {
+  updateCompanyLogoSubItems()
+})
 </script>
 
 <style scoped>
@@ -426,15 +686,18 @@ const handleImageError = (e: Event) => {
 .sub-list {
   border-top: 1px solid #e8f5e9;
   background-color: #fafafa;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .sub-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 10px 12px 10px 32px;
   cursor: move;
   transition: all 0.3s ease;
+  user-select: none;
 }
 
 .sub-item:hover {
@@ -486,5 +749,139 @@ const handleImageError = (e: Event) => {
   object-fit: contain;
   border-radius: 2px;
   background-color: #f5f5f5; /* 添加背景色，在图片加载时显示 */
+}
+
+.logo-search {
+  margin-bottom: 20px;
+}
+
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.logo-item {
+  aspect-ratio: 1;
+  border: 1px solid #e8f5e9;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: move;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo-item:hover {
+  box-shadow: 0 2px 12px 0 rgba(76, 175, 80, 0.1);
+  border-color: #4caf50;
+}
+
+.logo-item:hover .logo-image {
+  transform: scale(1.05);
+}
+
+.logo-image-container {
+  width: 100%;
+  height: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.logo-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: all 0.3s ease;
+}
+
+.logo-name {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.logo-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.no-data {
+  padding: 12px;
+  text-align: center;
+  color: #909399;
+  font-size: 12px;
+}
+
+.logo-grid {
+  min-height: 200px;
+}
+
+.logo-preview {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.logo-preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* 添加拖拽时的样式 */
+.sub-item[draggable="true"]:active {
+  opacity: 0.7;
+  cursor: grabbing;
+}
+
+.logo-search-container {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8f5e9;
+  position: sticky;
+  top: 0;
+  background-color: #fafafa;
+  z-index: 1;
+}
+
+.logo-search-container :deep(.el-input__wrapper) {
+  background-color: #f5f7fa;
+}
+
+.logo-search-container :deep(.el-input__inner) {
+  height: 28px;
+  line-height: 28px;
+}
+
+.sub-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sub-list::-webkit-scrollbar-thumb {
+  background-color: #c0c4cc;
+  border-radius: 3px;
+}
+
+.sub-list::-webkit-scrollbar-track {
+  background-color: #f5f7fa;
 }
 </style> 
