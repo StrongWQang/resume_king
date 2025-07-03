@@ -326,7 +326,7 @@ const handleTemplateSelect = async (templateId: string) => {
 }
 
 const templates = [
-  { id: '354907c7-3c1d-4471-821c-11565924bb73', name: '默认模板' },
+  { id: 'a13decb2-5a72-46f6-8dfb-e055e4b5d681', name: '作者强推模板' },
   { id: 'd5ec40df-3ee3-47e6-95e0-f7c251961899', name: '简约现代风格' },
   { id: 'c90222fa-e4ec-4e2f-8cda-881d1fa0c8b6', name: '创意设计风格' },
   { id: '32de6bc0-d07c-43bd-85b6-ac00020295e4', name: '专业商务风格' }

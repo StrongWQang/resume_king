@@ -23,31 +23,53 @@
         <div
           v-else-if="component.type.startsWith('text-')"
           class="text-component"
-          :class="{ 'selected': store.selectedComponentId === component.id }"
+          :class="{ 
+            'selected': store.selectedComponentId === component.id,
+            'draggable-hover': isDraggableHovered && store.selectedComponentId === component.id
+          }"
           :style="{
             left: `${component.x}px`,
             top: `${component.y}px`,
             width: `${component.width}px`,
             height: `${component.height}px`
           }"
-          @mousedown.stop="handleMouseDown"
+          @mousedown.stop="handleComponentMouseDown($event, component)"
+          @mousemove="handleDraggableHover($event, true)"
+          @mouseleave="handleDraggableHover($event, false)"
         >
+          <!-- 添加拖动提示区域 -->
+          <div class="drag-handle top"></div>
+          <div class="drag-handle right"></div>
+          <div class="drag-handle bottom"></div>
+          <div class="drag-handle left"></div>
+          
           <div 
-            class="text-content" 
-            contenteditable="true" 
-            :style="{
-              fontSize: `${component.fontSize}px`,
-              fontFamily: component.fontFamily,
-              color: component.color,
-              fontWeight: component.fontWeight,
-              lineHeight: component.lineHeight,
-              textAlign: component.textAlign,
-              whiteSpace: 'pre-wrap'
-            }"
-            @input="handleTextInput($event, component)"
-            @keydown="handleTextKeyDown($event, component)"
+            ref="textContentRef"
+            class="text-content-wrapper"
+            :class="{ 'wrapper-draggable-hover': isWrapperHovered }"
+            @mousedown.stop="handleTextWrapperMouseDown($event, component)"
+            @mousemove="handleWrapperHover($event, true)"
+            @mouseleave="handleWrapperHover($event, false)"
           >
-            {{ component.content }}
+            <div 
+              class="text-content" 
+              contenteditable="true" 
+              :style="{
+                fontSize: `${component.fontSize}px`,
+                fontFamily: component.fontFamily,
+                color: component.color,
+                fontWeight: component.fontWeight,
+                lineHeight: component.lineHeight,
+                textAlign: component.textAlign,
+                whiteSpace: 'pre-wrap'
+              }"
+              @mousedown.stop="handleTextContentMouseDown($event, component)"
+              @input="handleTextInput($event, component)"
+              @keydown="handleTextKeyDown($event, component)"
+              @mouseup="handleTextSelect($event, component)"
+            >
+              {{ component.content }}
+            </div>
           </div>
           <!-- 添加调整大小的手柄 -->
           <div
@@ -55,6 +77,16 @@
             class="resize-handle"
             @mousedown.stop="handleResizeStart"
           ></div>
+          <!-- 添加AI优化按钮 -->
+          <el-button
+            v-if="store.selectedComponentId === component.id && hasSelectedText"
+            class="ai-optimize-btn"
+            type="primary"
+            size="small"
+            @click="showOptimizeDialog"
+          >
+            AI优化
+          </el-button>
         </div>
         <!-- 分隔线组件 -->
         <div
@@ -80,12 +112,19 @@
       </template>
     </div>
   </div>
+  <!-- 添加AI优化对话框 -->
+  <AIOptimizeDialog
+    v-model:visible="optimizeDialogVisible"
+    :selected-text="selectedText"
+    @apply="handleOptimizedText"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useResumeStore } from '../store/resume'
 import ImageComponent from './ImageComponent.vue'
+import AIOptimizeDialog from './AIOptimizeDialog.vue'
 
 const canvasRef = ref<HTMLDivElement | null>(null)
 const store = useResumeStore()
@@ -307,7 +346,7 @@ const handleMouseDown = (event: MouseEvent) => {
   const x = event.clientX - rect.left
   const y = event.clientY - rect.top
   
-  // 首先检查是否点击了任何组件
+  // 检查是否点击了任何组件
   const clickedComponent = store.components.find(component => {
     return x >= component.x && 
            x <= component.x + component.width && 
@@ -317,18 +356,10 @@ const handleMouseDown = (event: MouseEvent) => {
   
   if (clickedComponent) {
     store.selectComponent(clickedComponent.id)
-    
-    // 如果不是在调整大小，则开始拖动
-    if (!isResizing) {
-      isDragging = true
-      startX = event.clientX
-      startY = event.clientY
-    }
   } else {
     store.selectComponent(null)
   }
   
-  // 重新渲染画布以显示选中状态
   renderCanvas()
 }
 
@@ -552,6 +583,94 @@ const handleResizeEnd = () => {
   document.removeEventListener('mousemove', handleResizeMove)
   document.removeEventListener('mouseup', handleResizeEnd)
 }
+
+// 添加新的响应式变量
+const hasSelectedText = ref(false)
+const selectedText = ref('')
+const optimizeDialogVisible = ref(false)
+const currentTextComponent = ref<any>(null)
+
+// 添加文本选择处理函数
+const handleTextSelect = (event: MouseEvent, component: any) => {
+  const selection = window.getSelection()
+  if (selection && selection.toString().trim()) {
+    hasSelectedText.value = true
+    selectedText.value = selection.toString()
+    currentTextComponent.value = component
+  } else {
+    hasSelectedText.value = false
+    selectedText.value = ''
+    currentTextComponent.value = null
+  }
+}
+
+// 显示优化对话框
+const showOptimizeDialog = () => {
+  optimizeDialogVisible.value = true
+}
+
+// 处理优化后的文本
+const handleOptimizedText = (optimizedText: string) => {
+  if (currentTextComponent.value && selectedText.value) {
+    // 获取当前组件的内容
+    const content = currentTextComponent.value.content
+    // 替换选中的文本
+    const newContent = content.replace(selectedText.value, optimizedText)
+    currentTextComponent.value.content = newContent
+    store.updateSelectedComponent()
+    
+    // 重置状态
+    hasSelectedText.value = false
+    selectedText.value = ''
+    currentTextComponent.value = null
+  }
+}
+
+// 修改事件处理函数
+const handleComponentMouseDown = (event: MouseEvent, component: any) => {
+  // 如果点击的是组件的根元素（空白区域），则启动拖动
+  if (event.target === event.currentTarget) {
+    store.selectComponent(component.id)
+    isDragging = true
+    startX = event.clientX
+    startY = event.clientY
+  }
+}
+
+const handleTextWrapperMouseDown = (event: MouseEvent, component: any) => {
+  // 如果点击的是文本包装器（不是文本内容），则启动拖动
+  if (event.target === event.currentTarget) {
+    store.selectComponent(component.id)
+    isDragging = true
+    startX = event.clientX
+    startY = event.clientY
+    event.preventDefault() // 阻止默认行为
+  }
+}
+
+const handleTextContentMouseDown = (event: MouseEvent, component: any) => {
+  // 点击文本内容区域时，只选中组件但不启动拖动
+  store.selectComponent(component.id)
+  event.stopPropagation() // 阻止事件冒泡
+}
+
+// 添加悬停状态变量
+const isDraggableHovered = ref(false)
+const isWrapperHovered = ref(false)
+
+// 处理边框区域悬停
+const handleDraggableHover = (event: MouseEvent, isHovering: boolean) => {
+  if (event.target === event.currentTarget) {
+    isDraggableHovered.value = isHovering
+  }
+}
+
+// 处理包装器区域悬停
+const handleWrapperHover = (event: MouseEvent, isHovering: boolean) => {
+  if (event.target === event.currentTarget) {
+    isWrapperHovered.value = isHovering
+  }
+}
 </script>
 
 <style scoped>
@@ -588,13 +707,66 @@ const handleResizeEnd = () => {
   background-color: rgba(76, 175, 80, 0.01);
 }
 
-.text-component:hover {
+/* 拖动提示区域样式 */
+.drag-handle {
+  position: absolute;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.drag-handle.top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  cursor: move;
+}
+
+.drag-handle.right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: move;
+}
+
+.drag-handle.bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  cursor: move;
+}
+
+.drag-handle.left {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: move;
+}
+
+/* 悬停效果 */
+.text-component.draggable-hover .drag-handle {
+  background-color: rgba(76, 175, 80, 0.3);
+}
+
+.text-component.draggable-hover {
   border-color: #4caf50;
 }
 
-.text-component.selected {
-  border-color: #4caf50;
-  border-width: 2px;
+.text-content-wrapper {
+  width: 100%;
+  height: 100%;
+  cursor: move;
+  position: relative;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.text-content-wrapper.wrapper-draggable-hover {
+  border-color: rgba(76, 175, 80, 0.3);
+  background-color: rgba(76, 175, 80, 0.05);
 }
 
 .text-content {
@@ -603,7 +775,23 @@ const handleResizeEnd = () => {
   padding: 5px;
   outline: none;
   word-break: break-word;
-  pointer-events: auto;
+  cursor: text;
+  user-select: text;
+  position: relative;
+  z-index: 1;
+}
+
+.text-content:hover {
+  cursor: text;
+}
+
+.text-component:hover {
+  border-color: #4caf50;
+}
+
+.text-component.selected {
+  border-color: #4caf50;
+  border-width: 2px;
 }
 
 .divider-component {
@@ -657,7 +845,7 @@ const handleResizeEnd = () => {
   background-color: #4caf50;
   border-radius: 50%;
   cursor: se-resize;
-  z-index: 10;
+  z-index: 2;
   pointer-events: auto;
 }
 
@@ -668,5 +856,12 @@ const handleResizeEnd = () => {
 /* 对齐辅助线样式 */
 .alignment-line {
   display: none;
+}
+
+.ai-optimize-btn {
+  position: absolute;
+  right: -70px;
+  top: 0;
+  z-index: 1000;
 }
 </style> 

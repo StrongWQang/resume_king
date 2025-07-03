@@ -22,15 +22,12 @@
         @image-uploaded="handleImageUploaded"
       />
       <div v-else class="image-container">
-        <img
-          :src="getProxyImageUrl(component.imageUrl)"
-          class="image"
-          :style="{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain'
-          }"
-          @error="handleImageError"
+        <GlobalImage
+          :src="component.imageUrl"
+          :alt="component.imageAlt || ''"
+          width="100%"
+          height="100%"
+          object-fit="contain"
         />
       </div>
     </div>
@@ -47,6 +44,8 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useResumeStore } from '../store/resume'
 import ImageUploader from './ImageUploader.vue'
+import GlobalImage from './GlobalImage.vue'
+import { imageLoader } from '../utils/imageLoader'
 
 const props = defineProps<{
   component: {
@@ -57,6 +56,7 @@ const props = defineProps<{
     width: number
     height: number
     imageUrl?: string
+    imageAlt?: string
   }
 }>()
 

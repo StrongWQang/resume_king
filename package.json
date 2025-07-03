@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vue-tsc": "^2.2.10"
+  }
+}

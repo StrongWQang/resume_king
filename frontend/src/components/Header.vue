@@ -1,6 +1,9 @@
 <template>
   <header class="header">
-    <div class="logo" @click="handleLogoClick" title="github链接 点击后跳转">Resume_King 简历王</div>
+    <div class="logo" @click="handleLogoClick" title="github链接 点击后跳转">
+      <img src="/logo-large.jpg" alt="Resume King Logo" class="logo-image" />
+      <span class="logo-text">Resume_King 简历王</span>
+    </div>
     <div class="actions">
       <el-button type="primary" @click="handleSave">保存</el-button>
       <el-button type="danger" @click="handleClear">清空</el-button>
@@ -281,6 +284,16 @@ const handleLogoClick = () => {
   padding: 8px 15px;
   border-radius: 6px;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-image {
+  height: 40px;
+  width: 40px;
+  object-fit: cover;
+  border-radius: 6px;
 }
 
 .logo:hover {
@@ -288,6 +301,10 @@ const handleLogoClick = () => {
   color: #4caf50;
   background-color: #f1f8e9;
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.15);
+}
+
+.logo-text {
+  white-space: nowrap;
 }
 
 .actions {
