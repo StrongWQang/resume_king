@@ -690,44 +690,46 @@ const showOptimizeDialog = () => {
 const handleOptimizedText = (optimizedText: string) => {
   if (currentTextComponent.value && selectedText.value) {
     const content = currentTextComponent.value.content || '';
+    // 创建临时div解析HTML
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
-
-    // 遍历所有文本节点，找到 selectedText 的起止位置
-    let found = false;
-    let charIndex = 0;
-    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null);
-    let startNode = null, endNode = null;
-    let startOffset = 0, endOffset = 0;
-
-    while (walker.nextNode()) {
-      const node = walker.currentNode as Text;
-      const nodeText = node.nodeValue || '';
-      const idx = nodeText.indexOf(selectedText.value);
-      if (!found && idx !== -1) {
-        // 找到选中文本在该文本节点中的位置
-        startNode = node;
-        endNode = node;
-        startOffset = idx;
-        endOffset = idx + selectedText.value.length;
-        found = true;
-        break;
+    // 获取纯文本
+    const plainText = tempDiv.innerText;
+    const selText = selectedText.value;
+    // 找到选中文本在纯文本中的位置
+    const idx = plainText.indexOf(selText);
+    if (idx !== -1) {
+      // 用于遍历和替换的字符计数
+      let charCount = 0;
+      let replaced = false;
+      function replaceInNode(node: Node) {
+        if (replaced) return;
+        if (node.nodeType === Node.TEXT_NODE) {
+          const nodeText = node.nodeValue || '';
+          if (!replaced && charCount + nodeText.length >= idx + selText.length && charCount <= idx) {
+            const start = idx - charCount;
+            const end = start + selText.length;
+            const before = nodeText.slice(0, start);
+            const after = nodeText.slice(end);
+            node.nodeValue = before + optimizedText + after;
+            replaced = true;
+          }
+          charCount += nodeText.length;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            replaceInNode(node.childNodes[i]);
+            if (replaced) break;
+          }
+        }
       }
-      charIndex += nodeText.length;
+      replaceInNode(tempDiv);
+      // 关键：直接在store.components中替换内容
+      const idxInStore = store.components.findIndex(c => c.id === currentTextComponent.value.id);
+      if (idxInStore !== -1) {
+        store.components[idxInStore].content = tempDiv.innerHTML;
+        store.updateSelectedComponent();
+      }
     }
-
-    if (found && startNode && endNode) {
-      // 替换文本节点内容
-      const nodeText = startNode.nodeValue || '';
-      const before = nodeText.slice(0, startOffset);
-      const after = nodeText.slice(endOffset);
-      startNode.nodeValue = before + optimizedText + after;
-
-      // 更新组件内容
-      currentTextComponent.value.content = tempDiv.innerHTML;
-      store.updateSelectedComponent();
-    }
-
     // 重置状态
     hasSelectedText.value = false;
     selectedText.value = '';
