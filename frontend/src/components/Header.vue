@@ -5,8 +5,14 @@
       <span class="logo-text">Resume_King 简历王</span>
     </div>
     <div class="actions">
-      <el-button type="primary" @click="handleSave">保存</el-button>
+      <el-button type="primary" @click="handleSave" :loading="saveLoading" :disabled="saveLoading">保存</el-button>
       <el-button type="danger" @click="handleClear">清空</el-button>
+      <span v-if="store.currentResumeId" class="resume-id-area">
+        <el-tag type="info" effect="plain" style="margin-left: 12px;">
+          简历ID: {{ store.currentResumeId }}
+          <el-icon style="cursor:pointer;margin-left:4px;" @click="copyResumeId"><copy-document /></el-icon>
+        </el-tag>
+      </span>
       <el-dropdown @command="handleImportCommand">
         <el-button type="primary">
           导入简历
@@ -26,12 +32,11 @@
         </el-button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="pdf">导出PDF</el-dropdown-item>
+            <el-dropdown-item command="pdf-settings">导出PDF</el-dropdown-item>
             <el-dropdown-item command="template">导出模板JSON</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
-      <el-button @click="handlePreview">预览</el-button>
     </div>
 
     <!-- 加载简历对话框 -->
@@ -67,6 +72,37 @@
         </template>
       </el-upload>
     </el-dialog>
+
+    <!-- PDF导出设置对话框 -->
+    <el-dialog v-model="pdfSettingsVisible" title="PDF导出设置" width="30%">
+      <div class="pdf-settings">
+        <div class="setting-item">
+          <span class="setting-label">清晰度 (DPI)</span>
+          <div class="setting-control">
+            <el-slider
+              v-model="pdfDpi"
+              :min="0"
+              :max="10"
+              :step="1"
+              show-input
+              :marks="{
+                0: '低',
+                4: '默认',
+                10: '高'
+              }"
+            />
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="pdfSettingsVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleExportPdfWithSettings">
+            导出PDF
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </header>
 </template>
 
@@ -74,20 +110,31 @@
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useResumeStore } from '../store/resume'
-import { UploadFilled, ArrowDown } from '@element-plus/icons-vue'
+import { UploadFilled, ArrowDown, CopyDocument } from '@element-plus/icons-vue'
 import { exportPDF } from '../utils/export'
 
 const store = useResumeStore()
 const loadDialogVisible = ref(false)
 const resumeId = ref('')
 const importDialogVisible = ref(false)
+const pdfSettingsVisible = ref(false)
+const pdfDpi = ref(4) // 默认DPI值为4
+const saveLoading = ref(false)
+let saveTimeout: number | null = null
 
 const handleSave = async () => {
+  if (saveLoading.value) return
+  saveLoading.value = true
   try {
     const id = await store.saveResume()
     ElMessage.success(`保存成功，简历ID：${id}`)
   } catch (error) {
     ElMessage.error('保存失败')
+  } finally {
+    if (saveTimeout) clearTimeout(saveTimeout)
+    saveTimeout = window.setTimeout(() => {
+      saveLoading.value = false
+    }, 2000) // 2秒后可再次点击
   }
 }
 
@@ -114,8 +161,16 @@ const handleExport = async () => {
     // 确保所有组件数据都是最新的
     store.updateSelectedComponent()
     
-    // 导出PDF
-    const pdfUrl = await exportPDF(store.components)
+    // 获取编辑区实际宽高（与ResumeCanvas一致）
+    const editorDom = document.querySelector('.resume-canvas') as HTMLElement
+    let width = 595, height = 842
+    if (editorDom) {
+      width = editorDom.offsetWidth
+      height = editorDom.offsetHeight
+    }
+    
+    // 使用当前设置的DPI值导出PDF
+    const pdfUrl = await exportPDF(store.components, pdfDpi.value, { width, height })
     
     // 下载PDF
     const a = document.createElement('a')
@@ -162,6 +217,11 @@ const handleExportTemplate = async () => {
   } catch (error) {
     ElMessage.error('模板导出失败')
   }
+}
+
+const handleExportPdfWithSettings = async () => {
+  pdfSettingsVisible.value = false
+  await handleExport()
 }
 
 const handlePreview = () => {
@@ -232,6 +292,9 @@ const handleExportCommand = (command: string) => {
     case 'pdf':
       handleExport()
       break
+    case 'pdf-settings':
+      pdfSettingsVisible.value = true
+      break
     case 'template':
       handleExportTemplate()
       break
@@ -260,6 +323,34 @@ const handleClear = () => {
 
 const handleLogoClick = () => {
   window.open('https://github.com/StrongWQang/resume_king', '_blank')
+}
+
+const copyResumeId = () => {
+  if (store.currentResumeId) {
+    // 先判断 clipboard API 是否可用
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(store.currentResumeId)
+        .then(() => {
+          ElMessage.success('简历ID已复制')
+        })
+        .catch(() => {
+          ElMessage.error('复制失败，请手动复制')
+        })
+    } else {
+      // 降级方案：用 input + execCommand
+      const input = document.createElement('input')
+      input.value = store.currentResumeId
+      document.body.appendChild(input)
+      input.select()
+      try {
+        document.execCommand('copy')
+        ElMessage.success('简历ID已复制')
+      } catch (e) {
+        ElMessage.error('复制失败，请手动复制')
+      }
+      document.body.removeChild(input)
+    }
+  }
 }
 </script>
 
@@ -426,5 +517,28 @@ const handleLogoClick = () => {
 
 :deep(.el-upload__tip) {
   color: #2e7d32;
+}
+
+.pdf-settings {
+  padding: 20px;
+}
+
+.setting-item {
+  margin-bottom: 20px;
+}
+
+.setting-label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.setting-control {
+  width: 100%;
+}
+
+.resume-id-area {
+  display: inline-block;
+  vertical-align: middle;
 }
 </style> 

@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/resumes")
@@ -17,8 +19,19 @@ public class ResumeController {
     @Autowired
     private ResumeService resumeService;
 
+    // 限流：记录每个IP最后一次请求时间
+    private static final ConcurrentHashMap<String, Long> ipRequestTimeMap = new ConcurrentHashMap<>();
+    private static final long RATE_LIMIT_INTERVAL_MS = 1000; // 1秒
+
     @PostMapping
-    public ResponseEntity<String> saveResume(@RequestBody List<Map<String, Object>> resumeData) {
+    public ResponseEntity<String> saveResume(@RequestBody List<Map<String, Object>> resumeData, HttpServletRequest request) {
+        String ip = request.getRemoteAddr();
+        long now = System.currentTimeMillis();
+        Long lastTime = ipRequestTimeMap.get(ip);
+        if (lastTime != null && now - lastTime < RATE_LIMIT_INTERVAL_MS) {
+            return ResponseEntity.status(429).body("请求过于频繁，请稍后再试");
+        }
+        ipRequestTimeMap.put(ip, now);
         try {
             String resumeId = resumeService.saveResume(resumeData);
             return ResponseEntity.ok(resumeId);

@@ -1,29 +1,25 @@
-declare const PDFKit: {
-  new (options?: {
-    size?: [number, number]
-    margin?: number
-    [key: string]: any
-  }): PDFKitDocument
+declare module 'pdfkit' {
+  export default class PDFDocument {
+    constructor(options?: any);
+    pipe(destination: any): any;
+    image(data: any, x: number, y: number, options?: any): this;
+    end(): void;
+  }
 }
 
-interface PDFKitDocument {
-  pipe(stream: any): any
-  image(src: string, x: number, y: number, options?: {
-    width?: number
-    height?: number
-    [key: string]: any
-  }): this
-  end(): void
-}
+declare module 'blob-stream' {
+  interface IBlobStream extends NodeJS.WritableStream {
+    toBlob(type?: string): Blob;
+    toBlobURL(type?: string): string;
+  }
 
-declare function blobStream(): {
-  on(event: string, callback: (error?: Error) => void): void
-  toBlob(type: string): Blob
+  function blobStream(): IBlobStream;
+  export default blobStream;
 }
 
 declare global {
   interface Window {
-    PDFKit: any
-    blobStream: any
+    PDFDocument: typeof PDFDocument;
+    blobStream: typeof blobStream;
   }
 } 

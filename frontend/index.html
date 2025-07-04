@@ -8,6 +8,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="简历王 - 智能简历制作工具">
     <title>简历王</title>
+    
+    <script>
+      // 定义全局变量以存储模块
+      window.PDF = {};
+      
+      // polyfill Node.js global 对象
+      window.global = window;
+      
+      // 定义CDN源列表
+      const CDN_SOURCES = {
+        blobStream: [
+          '/cdn/blob-stream.js',  // 本地备用
+          'https://cdn.jsdelivr.net/npm/blob-stream@0.1.3/blob-stream.js',
+          'https://unpkg.com/blob-stream@0.1.3/blob-stream.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/blob-stream/0.1.3/blob-stream.js'
+        ],
+        pdfkit: [
+          '/cdn/pdfkit.standalone.js',  // 本地备用
+          'https://cdn.jsdelivr.net/npm/pdfkit@0.13.0/js/pdfkit.standalone.js',
+          'https://unpkg.com/pdfkit@0.13.0/js/pdfkit.standalone.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/pdfkit/0.13.0/pdfkit.standalone.js'
+        ]
+      };
+      
+      // 加载脚本函数
+      function loadScript(url) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = url;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      // 尝试加载脚本
+      async function tryLoadScript(urls, name) {
+        for (const url of urls) {
+          try {
+            await loadScript(url);
+            console.log(`成功从 ${url} 加载 ${name}`);
+            return true;
+          } catch (error) {
+            console.warn(`从 ${url} 加载 ${name} 失败，尝试下一个源`);
+          }
+        }
+        throw new Error(`所有 ${name} CDN 源都加载失败`);
+      }
+      
+      // 初始化PDF相关模块
+      async function initPDFModules() {
+        try {
+          // 先加载 blob-stream
+          const blobStreamSuccess = await tryLoadScript(CDN_SOURCES.blobStream, 'blob-stream');
+          // 再加载 pdfkit
+          const pdfKitSuccess = await tryLoadScript(CDN_SOURCES.pdfkit, 'pdfkit');
+
+          // 等待 window.PDFDocument 挂载
+          let pdfkitTries = 0;
+          while (typeof window.PDFDocument !== 'function' && typeof window.pdfkit !== 'function' && pdfkitTries < 10) {
+            await new Promise(r => setTimeout(r, 200));
+            pdfkitTries++;
+          }
+          if (typeof window.PDFDocument !== 'function' && typeof window.pdfkit !== 'function') {
+            throw new Error('PDFKit 加载后 window.PDFDocument 和 window.pdfkit 依然未挂载');
+          }
+          // 兼容挂载
+          window.PDF.PDFDocument = window.PDFDocument || window.pdfkit;
+
+          // 检查并修复blob-stream
+          if (typeof window.blobStream !== 'function') {
+            window.blobStream = window.BlobStream;
+          }
+          window.PDF.blobStream = window.blobStream || window.BlobStream;
+
+          const status = {
+            PDFDocument: typeof window.PDF.PDFDocument,
+            blobStream: typeof window.PDF.blobStream
+          };
+
+          console.log('PDF模块加载状态:', status);
+
+          // 验证模块是否都正确加载
+          if (status.PDFDocument !== 'function' || status.blobStream !== 'function') {
+            throw new Error(`PDF模块加载不完整: ${JSON.stringify(status)}`);
+          }
+
+          // 测试模块功能
+          try {
+            const testDoc = new window.PDF.PDFDocument();
+            const testStream = window.PDF.blobStream();
+            console.log('PDF模块功能测试通过');
+          } catch (error) {
+            throw new Error(`PDF模块功能测试失败: ${error.message}`);
+          }
+        } catch (error) {
+          console.error('PDF模块加载失败:', error);
+          // 清理可能的部分加载状态
+          window.PDF = {};
+          // 重新抛出错误以便上层捕获
+          throw error;
+        }
+      }
+      
+      // 启动初始化
+      initPDFModules().catch(error => {
+        console.error('PDF模块初始化失败，将在3秒后重试:', error);
+        setTimeout(initPDFModules, 3000);
+      });
+    </script>
   </head>
   <body>
     <div id="app"></div>

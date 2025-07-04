@@ -25,6 +25,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import { imageLoader } from '../utils/imageLoader'
 
 const props = defineProps<{
   componentId: string
@@ -121,7 +122,7 @@ const handleFileChange = async (event: Event) => {
       console.error('Failed to load image from URL:', processedUrl)
       
       // 尝试使用代理URL
-      const proxyUrl = `/api/proxy/image?url=${encodeURIComponent(processedUrl)}`
+      const proxyUrl = imageLoader.getProxyImageUrl(processedUrl)
       console.log('Trying proxy URL:', proxyUrl)
       
       const proxyImg = new Image()

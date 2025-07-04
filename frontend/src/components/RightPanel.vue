@@ -206,6 +206,29 @@ const handleSizeChange = () => {
     // 确保尺寸为整数且不小于1
     selectedComponent.value.width = Math.max(1, Math.round(selectedComponent.value.width))
     selectedComponent.value.height = Math.max(1, Math.round(selectedComponent.value.height))
+    // 自动调整最小宽高
+    if (selectedComponent.value.type.startsWith('text-')) {
+      // 复用 ResumeCanvas.vue 的 measureTextSize 逻辑
+      const div = document.createElement('div')
+      div.style.position = 'absolute'
+      div.style.visibility = 'hidden'
+      div.style.whiteSpace = 'pre-wrap'
+      div.style.fontSize = (selectedComponent.value.fontSize || 14) + 'px'
+      div.style.fontFamily = selectedComponent.value.fontFamily || 'Microsoft YaHei'
+      div.style.fontWeight = selectedComponent.value.fontWeight || 400
+      div.style.lineHeight = selectedComponent.value.lineHeight || 1.5
+      div.style.textAlign = selectedComponent.value.textAlign || 'left'
+      div.style.width = 'auto'
+      div.style.height = 'auto'
+      div.style.padding = '0'
+      div.innerText = selectedComponent.value.content || ''
+      document.body.appendChild(div)
+      const width = Math.ceil(div.offsetWidth)
+      const height = Math.ceil(div.offsetHeight)
+      document.body.removeChild(div)
+      selectedComponent.value.width = Math.max(selectedComponent.value.width, width)
+      selectedComponent.value.height = Math.max(selectedComponent.value.height, height)
+    }
     store.updateSelectedComponent()
   }
 }

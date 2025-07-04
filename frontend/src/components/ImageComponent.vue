@@ -249,11 +249,7 @@ const triggerFileSelect = async () => {
 
 // 添加获取代理图片URL的方法
 const getProxyImageUrl = (url: string) => {
-  if (!url) return ''
-  // 如果已经是代理URL，直接返回
-  if (url.startsWith('/api/proxy/image')) return url
-  // 否则转换为代理URL
-  return `/api/proxy/image?url=${encodeURIComponent(url)}`
+  return imageLoader.getProxyImageUrl(url)
 }
 
 const handleImageError = (e: Event) => {

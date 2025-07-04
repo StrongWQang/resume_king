@@ -6,7 +6,14 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
+      '@': resolve(__dirname, 'src'),
+      stream: 'readable-stream'
+    }
+  },
+  optimizeDeps: {
+    include: ['blob-stream', 'pdfkit-browserify', 'readable-stream'],
+    esbuildOptions: {
+      target: 'es2020'
     }
   },
   server: {
@@ -19,8 +26,9 @@ export default defineConfig({
     }
   },
   build: {
-    rollupOptions: {
-      input: resolve(__dirname, 'index.html')
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
     }
   }
 }) 

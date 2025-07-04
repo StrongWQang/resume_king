@@ -54,6 +54,7 @@
             <div 
               class="text-content" 
               contenteditable="true" 
+              v-html="component.content"
               :style="{
                 fontSize: `${component.fontSize}px`,
                 fontFamily: component.fontFamily,
@@ -67,8 +68,10 @@
               @input="handleTextInput($event, component)"
               @keydown="handleTextKeyDown($event, component)"
               @mouseup="handleTextSelect($event, component)"
+              @compositionstart="handleCompositionStart"
+              @compositionend="handleCompositionEnd($event, component)"
+              @blur="handleTextBlur($event, component)"
             >
-              {{ component.content }}
             </div>
           </div>
           <!-- 添加调整大小的手柄 -->
@@ -99,7 +102,7 @@
             width: `${component.width}px`,
             padding: `${component.padding || 10}px 0`
           }"
-          @mousedown.stop="handleMouseDown"
+          @mousedown.stop="handleComponentMouseDown($event, component)"
         >
           <div 
             class="divider-line"
@@ -107,6 +110,12 @@
               borderColor: component.color || '#dcdfe6',
               borderWidth: component.thickness ? `${component.thickness}px` : '1px'
             }"
+          ></div>
+          <!-- 添加调整大小的手柄 -->
+          <div
+            v-if="store.selectedComponentId === component.id"
+            class="resize-handle"
+            @mousedown.stop="handleResizeStart"
           ></div>
         </div>
       </template>
@@ -405,40 +414,108 @@ const handleMouseUp = () => {
   isDragging = false
 }
 
-// 添加文本输入处理函数
+// 新增：测量文本内容实际宽高
+function measureTextSize(component: any) {
+  // 创建隐藏div用于测量
+  const div = document.createElement('div')
+  div.style.position = 'absolute'
+  div.style.visibility = 'hidden'
+  div.style.whiteSpace = 'pre-wrap'
+  div.style.fontSize = (component.fontSize || 14) + 'px'
+  div.style.fontFamily = component.fontFamily || 'Microsoft YaHei'
+  div.style.fontWeight = component.fontWeight || 400
+  div.style.lineHeight = component.lineHeight || 1.5
+  div.style.textAlign = component.textAlign || 'left'
+  div.style.width = 'auto'
+  div.style.height = 'auto'
+  div.style.padding = '0'
+  div.innerText = component.content || ''
+  document.body.appendChild(div)
+  const width = Math.ceil(div.offsetWidth)
+  const height = Math.ceil(div.offsetHeight)
+  document.body.removeChild(div)
+  return { width, height }
+}
+
+// 在 handleTextInput 和 handleSizeChange 里调用 measureTextSize
 const handleTextInput = (event: Event, component: any) => {
-  const target = event.target as HTMLElement
-  let content = target.textContent || ''
-  
-  // 处理•符号，将其转换为换行
-  if (content.includes('•')) {
-    content = content.split('•').map((line, index) => {
-      // 第一行不需要添加•符号
-      return index === 0 ? line.trim() : '•' + line.trim()
-    }).join('\n')
-    
-    // 更新组件内容
-    component.content = content
-    target.textContent = content
-  } else {
-    component.content = content
+  // 不同步内容到 store，只让 DOM 自己维护
+  if (isComposing.value) return // 输入法输入中，不处理
+  const target = event.target as HTMLElement;
+  // 只做宽高自适应
+  if (component.type.startsWith('text-')) {
+    const { width, height } = measureTextSize({ ...component, content: target.innerText });
+    component.width = Math.max(component.width, width);
+    component.height = Math.max(component.height, height);
   }
-  
-  store.updateSelectedComponent()
 }
 
 // 添加文本键盘事件处理函数
 const handleTextKeyDown = (event: KeyboardEvent, component: any) => {
+  if (isComposing.value) return // 输入法输入中，不处理
+  const target = event.target as HTMLElement;
+  const text = target.textContent || '';
+  const selection = window.getSelection();
+  if (!selection) return;
+  
+  const range = selection.getRangeAt(0);
+  const cursorPosition = range.startOffset;
+
   if (event.key === 'Delete' || event.key === 'Backspace') {
-    const target = event.target as HTMLElement
-    const text = target.textContent || ''
-    
     // 如果文本内容为空，则删除整个组件
     if (text.trim() === '') {
-      event.preventDefault() // 阻止默认的删除行为
-      store.deleteSelectedComponent()
-      renderCanvas()
+      event.preventDefault();
+      store.deleteSelectedComponent();
+      renderCanvas();
+      return;
     }
+
+    // 处理退格键删除项目符号的情况
+    if (event.key === 'Backspace') {
+      const lines = text.split('\n');
+      const currentLineIndex = text.substring(0, cursorPosition).split('\n').length - 1;
+      const currentLine = lines[currentLineIndex];
+      const currentLineStart = text.lastIndexOf('\n', cursorPosition - 1) + 1;
+
+      // 如果当前行以"• "开头且光标在"• "后面或其中
+      if (currentLine.startsWith('• ') && cursorPosition - currentLineStart <= 2) {
+        event.preventDefault();
+        lines[currentLineIndex] = currentLine.substring(2); // 移除"• "
+        const newText = lines.join('\n');
+        target.textContent = newText;
+        
+        // 设置光标位置到行首
+        const newRange = document.createRange();
+        newRange.setStart(target.firstChild || target, currentLineStart);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        // 更新组件内容
+        component.content = newText;
+        store.updateSelectedComponent();
+        return;
+      }
+    }
+  } else if (event.key === 'Enter') {
+    event.preventDefault(); // 阻止默认的换行行为
+    
+    const textBefore = text.substring(0, cursorPosition);
+    const textAfter = text.substring(cursorPosition);
+    const newText = textBefore + '\n• ' + textAfter;
+    target.textContent = newText;
+    
+    // 设置光标位置到新行的项目符号后
+    const newPosition = cursorPosition + 3; // \n• 的长度是3
+    const newRange = document.createRange();
+    newRange.setStart(target.firstChild || target, newPosition);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+    
+    // 更新组件内容
+    component.content = newText;
+    store.updateSelectedComponent();
   }
 }
 
@@ -612,17 +689,49 @@ const showOptimizeDialog = () => {
 // 处理优化后的文本
 const handleOptimizedText = (optimizedText: string) => {
   if (currentTextComponent.value && selectedText.value) {
-    // 获取当前组件的内容
-    const content = currentTextComponent.value.content
-    // 替换选中的文本
-    const newContent = content.replace(selectedText.value, optimizedText)
-    currentTextComponent.value.content = newContent
-    store.updateSelectedComponent()
-    
+    const content = currentTextComponent.value.content || '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+
+    // 遍历所有文本节点，找到 selectedText 的起止位置
+    let found = false;
+    let charIndex = 0;
+    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null);
+    let startNode = null, endNode = null;
+    let startOffset = 0, endOffset = 0;
+
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text;
+      const nodeText = node.nodeValue || '';
+      const idx = nodeText.indexOf(selectedText.value);
+      if (!found && idx !== -1) {
+        // 找到选中文本在该文本节点中的位置
+        startNode = node;
+        endNode = node;
+        startOffset = idx;
+        endOffset = idx + selectedText.value.length;
+        found = true;
+        break;
+      }
+      charIndex += nodeText.length;
+    }
+
+    if (found && startNode && endNode) {
+      // 替换文本节点内容
+      const nodeText = startNode.nodeValue || '';
+      const before = nodeText.slice(0, startOffset);
+      const after = nodeText.slice(endOffset);
+      startNode.nodeValue = before + optimizedText + after;
+
+      // 更新组件内容
+      currentTextComponent.value.content = tempDiv.innerHTML;
+      store.updateSelectedComponent();
+    }
+
     // 重置状态
-    hasSelectedText.value = false
-    selectedText.value = ''
-    currentTextComponent.value = null
+    hasSelectedText.value = false;
+    selectedText.value = '';
+    currentTextComponent.value = null;
   }
 }
 
@@ -670,6 +779,23 @@ const handleWrapperHover = (event: MouseEvent, isHovering: boolean) => {
   if (event.target === event.currentTarget) {
     isWrapperHovered.value = isHovering
   }
+}
+
+const isComposing = ref(false)
+
+const handleCompositionStart = () => {
+  isComposing.value = true
+}
+
+const handleCompositionEnd = (event: CompositionEvent, component: any) => {
+  isComposing.value = false
+  handleTextBlur(event as unknown as FocusEvent, component)
+}
+
+const handleTextBlur = (event: FocusEvent, component: any) => {
+  const target = event.target as HTMLElement
+  component.content = target.innerHTML
+  store.updateSelectedComponent()
 }
 </script>
 
@@ -772,13 +898,29 @@ const handleWrapperHover = (event: MouseEvent, isHovering: boolean) => {
 .text-content {
   width: 100%;
   height: 100%;
-  padding: 5px;
+  padding: 0;
   outline: none;
   word-break: break-word;
   cursor: text;
   user-select: text;
   position: relative;
   z-index: 1;
+  line-height: 1;
+  display: block;
+  vertical-align: top;
+  white-space: pre-wrap;
+}
+
+/* 美化项目符号 */
+.text-content[data-has-bullets="true"] {
+  padding-left: 1.5em;
+}
+
+.text-content[data-has-bullets="true"]::before {
+  content: "•";
+  position: absolute;
+  left: 0.5em;
+  color: #666;
 }
 
 .text-content:hover {
