@@ -131,9 +131,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { useResumeStore } from '../store/resume'
-import ImageComponent from './ImageComponent.vue'
-import AIOptimizeDialog from './AIOptimizeDialog.vue'
+import { useResumeStore } from '../../store/resume'
+import ImageComponent from '../common/ImageComponent.vue'
+import AIOptimizeDialog from '../common/AIOptimizeDialog.vue'
 
 const canvasRef = ref<HTMLDivElement | null>(null)
 const store = useResumeStore()
@@ -1008,4 +1008,4 @@ const handleTextBlur = (event: FocusEvent, component: any) => {
   top: 0;
   z-index: 1000;
 }
-</style> 
+</style>

@@ -185,7 +185,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useResumeStore } from '../store/resume'
+import { useResumeStore } from '../../store/resume'
 import { ElMessage } from 'element-plus'
 
 const store = useResumeStore()

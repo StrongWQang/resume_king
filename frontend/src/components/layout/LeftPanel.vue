@@ -204,7 +204,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { Document, Picture, ArrowDown, Minus, Search } from '@element-plus/icons-vue'
-import { useResumeStore } from '../store/resume'
+import { useResumeStore } from '../../store/resume'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -884,4 +884,4 @@ watch(logoSearchKeyword, () => {
 .sub-list::-webkit-scrollbar-track {
   background-color: #f5f7fa;
 }
-</style> 
+</style>

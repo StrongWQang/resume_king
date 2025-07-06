@@ -25,7 +25,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { imageLoader } from '../utils/imageLoader'
+import { imageLoader } from "../../utils/imageLoader";
 
 const props = defineProps<{
   componentId: string
@@ -225,4 +225,4 @@ defineExpose({
   height: 100%;
   object-fit: contain;
 }
-</style> 
+</style>

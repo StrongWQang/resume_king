@@ -42,10 +42,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useResumeStore } from '../store/resume'
+import { useResumeStore } from "../../store/resume";
 import ImageUploader from './ImageUploader.vue'
 import GlobalImage from './GlobalImage.vue'
-import { imageLoader } from '../utils/imageLoader'
+import { imageLoader } from "../../utils/imageLoader";
 
 const props = defineProps<{
   component: {
@@ -385,4 +385,4 @@ defineExpose({
   height: 100%;
   pointer-events: auto;
 }
-</style> 
+</style>

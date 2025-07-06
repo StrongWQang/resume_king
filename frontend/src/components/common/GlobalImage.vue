@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Loading, Warning } from '@element-plus/icons-vue'
-import { imageLoader } from '../utils/imageLoader'
+import { imageLoader } from "../../utils/imageLoader";
 
 const props = defineProps<{
   src: string
@@ -129,4 +129,4 @@ onMounted(async () => {
     transform: rotate(360deg);
   }
 }
-</style> 
+</style>
