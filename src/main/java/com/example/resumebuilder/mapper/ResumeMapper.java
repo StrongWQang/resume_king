@@ -19,4 +19,10 @@ public interface ResumeMapper {
     
     @Delete("DELETE FROM resume WHERE id = #{id}")
     void deleteById(String id);
-} 
+
+    @Update("UPDATE resume SET `like` = `like` + 1 WHERE id = #{id}")
+    void increaseLikeCount(String id);
+
+    @Update("UPDATE resume SET `like` = `like` - 1 WHERE id = #{id} AND `like` > 0")
+    void decreaseLikeCount(String id);
+}

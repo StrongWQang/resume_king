@@ -44,4 +44,4 @@ const props = defineProps<{
   background: linear-gradient(to right, transparent, #409eff, transparent);
   border: none;
 }
-</style> 
+</style>

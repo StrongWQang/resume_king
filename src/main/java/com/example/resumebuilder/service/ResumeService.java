@@ -96,6 +96,30 @@ public class ResumeService {
     }
 
     @Transactional
+    public void increaseLikeCount(String id) {
+        try {
+            logger.info("增加简历点赞数，ID: {}", id);
+            resumeMapper.increaseLikeCount(id);
+            logger.info("简历点赞数增加成功，ID: {}", id);
+        } catch (Exception e) {
+            logger.error("增加简历点赞数失败", e);
+            throw new RuntimeException("增加简历点赞数失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public void decreaseLikeCount(String id) {
+        try {
+            logger.info("减少简历点赞数，ID: {}", id);
+            resumeMapper.decreaseLikeCount(id);
+            logger.info("简历点赞数减少成功，ID: {}", id);
+        } catch (Exception e) {
+            logger.error("减少简历点赞数失败", e);
+            throw new RuntimeException("减少简历点赞数失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
     public void deleteResume(String id) {
         try {
             logger.info("开始删除简历，ID: {}", id);
@@ -263,5 +287,7 @@ public class ResumeService {
             throw new RuntimeException("生成PDF失败: " + e.getMessage(), e);
         }
     }
+
+
 }
 
