@@ -1,60 +1,94 @@
 <template>
   <header class="header">
-    <div class="logo" @click="handleLogoClick" title="点击回到首页">
-      <img src="/logo-large.jpg" alt="Resume King Logo" class="logo-image" />
-      <span class="logo-text">Resume_King 简历王</span>
-    </div>
-    <el-button
-      type="info"
-      @click="handleResumeSquareClick"
-      class="resume-square-button"
-      >简历广场</el-button
-    >
-    <div class="actions">
-      <el-button
-        type="primary"
-        @click="handleSave"
-        :loading="saveLoading"
-        :disabled="saveLoading"
-        >保存</el-button
-      >
-      <el-button type="danger" @click="handleClear">清空</el-button>
-      <span v-if="store.currentResumeId" class="resume-id-area">
-        <el-tag type="info" effect="plain" style="margin-left: 12px">
-          简历ID: {{ store.currentResumeId }}
-          <el-icon
-            style="cursor: pointer; margin-left: 4px"
-            @click="copyResumeId"
-            ><copy-document
-          /></el-icon>
-        </el-tag>
-      </span>
-      <el-dropdown @command="handleImportCommand">
-        <el-button type="primary">
-          导入简历
-          <el-icon class="el-icon--right"><arrow-down /></el-icon>
-        </el-button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="load">根据ID加载简历</el-dropdown-item>
-            <el-dropdown-item command="import">导入模板JSON</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
-      <el-dropdown @command="handleExportCommand">
-        <el-button type="success">
-          导出简历
-          <el-icon class="el-icon--right"><arrow-down /></el-icon>
-        </el-button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="pdf-settings">导出PDF</el-dropdown-item>
-            <el-dropdown-item command="template">导出模板JSON</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+    <!-- 左侧区域：Logo和导航按钮 -->
+    <div class="header-left">
+      <div class="logo" @click="handleLogoClick" title="点击回到首页">
+        <img src="/logo-large.jpg" alt="Resume King Logo" class="logo-image" />
+        <span class="logo-text">Resume_King 简历王</span>
+      </div>
+      
+      <!-- 导航按钮组 -->
+      <div class="nav-buttons">
+        <el-button
+          type="info"
+          @click="handleResumeSquareClick"
+          class="nav-button"
+          icon="Grid"
+        >简历广场</el-button>
+        
+        <el-button
+          type="warning"
+          @click="handleServerMonitorClick"
+          class="nav-button"
+          icon="Monitor"
+        >服务器监控</el-button>
+      </div>
     </div>
 
+    <!-- 右侧区域：操作按钮 -->
+    <div class="header-right">
+      <!-- 简历ID显示区域 -->
+      <div v-if="store.currentResumeId" class="resume-id-area">
+        <el-tag type="info" effect="plain">
+          简历ID: {{ store.currentResumeId }}
+          <el-icon
+            class="copy-icon"
+            @click="copyResumeId"
+          ><copy-document /></el-icon>
+        </el-tag>
+      </div>
+
+      <!-- 操作按钮组 -->
+      <div class="action-buttons">
+        <!-- 文件操作组 -->
+        <div class="button-group file-actions">
+          <el-button
+            type="primary"
+            @click="handleSave"
+            :loading="saveLoading"
+            :disabled="saveLoading"
+            icon="Document"
+          >保存</el-button>
+          
+          <el-button 
+            type="danger" 
+            @click="handleClear"
+            icon="Delete"
+          >清空</el-button>
+        </div>
+        
+        <!-- 导入导出组 -->
+        <div class="button-group io-actions">
+          <el-dropdown @command="handleImportCommand">
+            <el-button type="primary">
+              导入简历
+              <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="load">根据ID加载简历</el-dropdown-item>
+                <el-dropdown-item command="import">导入模板JSON</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          
+          <el-dropdown @command="handleExportCommand">
+            <el-button type="success">
+              导出简历
+              <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="pdf-settings">导出PDF</el-dropdown-item>
+                <el-dropdown-item command="template">导出模板JSON</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </div>
+    </div>
+
+    <!-- 对话框部分保持不变 -->
     <!-- 加载简历对话框 -->
     <el-dialog v-model="loadDialogVisible" title="加载简历" width="30%">
       <el-input v-model="resumeId" placeholder="请输入简历ID" />
@@ -122,7 +156,15 @@
 import { ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useResumeStore } from "../../store/resume";
-import { UploadFilled, ArrowDown, CopyDocument } from "@element-plus/icons-vue";
+import { 
+  UploadFilled, 
+  ArrowDown, 
+  CopyDocument,
+  Document,
+  Delete,
+  Monitor,
+  Grid
+} from "@element-plus/icons-vue";
 import { exportPDF } from "../../utils/export";
 import { useRouter } from "vue-router";
 
@@ -378,12 +420,16 @@ const copyResumeId = () => {
 const handleResumeSquareClick = () => {
   router.push("/resume-square");
 };
+
+const handleServerMonitorClick = () => {
+  router.push("/server-monitor");
+};
 </script>
 
 <style scoped>
 .header {
   display: flex;
-  justify-content: flex-start; /* Align items to the start */
+  justify-content: space-between; /* Distribute space between left and right */
   align-items: center;
   padding: 0 20px;
   height: 60px;
@@ -392,23 +438,56 @@ const handleResumeSquareClick = () => {
   border-bottom: 1px solid #e8f5e9;
 }
 
-.resume-square-button {
-  margin-left: 20px; /* Space between logo and button */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Space between logo and nav buttons */
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Space between right items */
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px; /* Space between nav buttons */
+}
+
+.nav-button {
   font-size: 16px; /* Larger font size */
   padding: 10px 20px; /* Larger padding */
   transform: scale(1.1); /* Slightly larger button */
   transition: all 0.3s ease;
+  border-radius: 8px;
 }
 
-.resume-square-button:hover {
+.nav-button:hover {
   transform: scale(1.15); /* Even larger on hover */
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2); /* More prominent shadow */
 }
 
-.actions {
-  margin-left: auto; /* Push actions to the right */
+.action-buttons {
   display: flex;
-  gap: 12px;
+  gap: 16px; /* Space between button groups */
+}
+
+.button-group {
+  display: flex;
+  gap: 10px; /* Space between buttons within a group */
+  position: relative;
+}
+
+/* Add subtle divider between button groups */
+.button-group.file-actions::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 15%;
+  height: 70%;
+  width: 1px;
+  background-color: #e8f5e9;
 }
 
 .logo {
@@ -441,11 +520,38 @@ const handleResumeSquareClick = () => {
 
 .logo-text {
   white-space: nowrap;
+  font-weight: 700;
+  background: linear-gradient(45deg, #2e7d32, #4caf50);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 1px 2px rgba(46, 125, 50, 0.1);
 }
 
-.actions {
+.resume-id-area {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: #f1f8e9;
+  border-radius: 6px;
+  border: 1px solid #e8f5e9;
+  transition: all 0.3s ease;
+}
+
+.resume-id-area:hover {
+  background-color: #e8f5e9;
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.1);
+}
+
+.copy-icon {
+  cursor: pointer;
+  margin-left: 4px;
+  color: #4caf50; /* Match primary color */
+  transition: all 0.2s ease;
+}
+
+.copy-icon:hover {
+  color: #2e7d32; /* Darker on hover */
+  transform: scale(1.2);
 }
 
 :deep(.el-button) {
@@ -590,8 +696,33 @@ const handleResumeSquareClick = () => {
   width: 100%;
 }
 
-.resume-id-area {
-  display: inline-block;
-  vertical-align: middle;
+/* 响应式调整 */
+@media (max-width: 1024px) {
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .button-group.file-actions::after {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .header-left, .header-right {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .nav-buttons {
+    margin-top: 10px;
+  }
 }
 </style>

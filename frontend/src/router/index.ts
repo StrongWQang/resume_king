@@ -10,6 +10,11 @@ const routes = [
     path: '/resume-square',
     name: 'ResumeSquare',
     component: () => import('../views/ResumeSquareView.vue')
+  },
+  {
+    path: '/server-monitor',
+    name: 'ServerMonitor',
+    component: () => import('../views/ServerMonitorView.vue')
   }
 ]
 

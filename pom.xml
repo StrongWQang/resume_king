@@ -18,6 +18,8 @@
     <properties>
         <java.version>17</java.version>
         <itext.version>8.0.2</itext.version>
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
     </properties>
     
     <dependencies>
@@ -25,6 +27,19 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        
+        <!-- Nacos Config -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+        
+        <!-- Spring Cloud Bootstrap -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+        </dependency>
+        
         <!-- 阿里云OSS -->
         <dependency>
             <groupId>com.aliyun.oss</groupId>
@@ -51,7 +66,7 @@
             <artifactId>itext7-core</artifactId>
             <version>8.0.2</version>
             <type>pom</type>
-            <scope>import</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
@@ -113,7 +128,33 @@
             <artifactId>jakarta.annotation-api</artifactId>
             <version>2.1.1</version>
         </dependency>
+
+        <!-- 添加H2数据库依赖用于测试 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     
     <build>
         <plugins>

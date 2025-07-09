@@ -1,0 +1,24 @@
+# 仅使用运行环境的OpenJDVLK镜像
+FROM eclipse-temurin:17-jre-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 将你已经编译好的JAR包复制到镜像中
+# 请确保 Dockerfile.backend 和 resume-builder-0.0.1-SNAPSHOT.jar 在同一个目录下
+COPY resume-builder-0.0.1-SNAPSHOT.jar app.jar
+
+# 暴露Spring Boot应用运行的端口 (默认8080)
+EXPOSE 8080
+
+# 添加等待脚本，确保MySQL和Nacos已启动
+# 如果你的应用需要等待数据库或Nacos启动，保留这部分
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+RUN chmod +x /wait
+
+# 定义容器启动时执行的命令，运行JAR包
+# 如果你需要等待脚本，使用 /wait && java -jar app.jar
+CMD /wait && java -jar app.jar
+
+# 如果你不需要等待脚本，可以直接使用
+# CMD ["java","-jar","app.jar"]

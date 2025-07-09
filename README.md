@@ -194,3 +194,34 @@ MIT License
 
 ![img.png](img.png)
 
+
+# 部署后端docker镜像 
+
+打包 package后端jar包  在同目录下执行   docker build -t resume_backend -f Dockerfile.backend .
+
+运行
+
+docker run -d -p 8080:8080 --name resume_back --network resume resume_backend
+
+
+
+# 部署前端docker镜像
+
+cd frontend
+
+npx vite build
+
+1.将前端打包为 dist 放到  /mydata/nginx/html/dist 目录下
+
+nginx配置放到   /mydata/nginx/conf/nginx.conf 目录下
+
+
+docker run -d \
+--name nginx \
+-p 3000:3000 \
+-v /mydata/nginx/html/dist:/usr/share/nginx/html \
+-v  /mydata/nginx/conf/nginx.conf:/etc/nginx/nginx.conf \
+--network resume \
+nginx
+
+
