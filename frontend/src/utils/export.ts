@@ -38,6 +38,8 @@ const createCanvas = (width: number, height: number): HTMLCanvasElement => {
 const loadImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    // 设置跨域属性，解决canvas污染问题
+    img.crossOrigin = 'anonymous'
     let retryCount = 0
     const maxRetries = 3
     const retryDelay = 1000
@@ -69,7 +71,12 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
       img.src = src
     }
 
-    tryLoadImage(url)
+    // 确保使用代理URL加载外部图片
+    if (url && url.match(/^https?:\/\//)) {
+      tryLoadImage(`/api/proxy/image?url=${encodeURIComponent(url)}`)
+    } else {
+      tryLoadImage(url)
+    }
   })
 }
 
@@ -315,8 +322,21 @@ export const exportPDF = async (
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, width * DPI, height * DPI)
     
+    // 预处理所有组件，确保图片URL都使用代理
+    const processedComponents = components.map(component => {
+      if (component.type === 'image' && component.imageUrl) {
+        return {
+          ...component,
+          imageUrl: component.imageUrl.match(/^https?:\/\//) ? 
+            `/api/proxy/image?url=${encodeURIComponent(component.imageUrl)}` : 
+            component.imageUrl
+        };
+      }
+      return component;
+    });
+    
     // 渲染所有组件
-    for (const component of components) {
+    for (const component of processedComponents) {
       console.log('渲染组件:', {
         type: component.type,
         position: { x: component.x, y: component.y }
@@ -326,58 +346,132 @@ export const exportPDF = async (
 
     console.log('组件渲染完成，开始创建PDF...')
 
-    // 获取canvas图像数据
-    const base64 = canvas.toDataURL('image/jpeg')
+    try {
+      // 获取canvas图像数据
+      const base64 = canvas.toDataURL('image/jpeg');
+      
+      // 检查模块加载状态
+      console.log('PDF模块加载状态:', {
+        PDFDocument: typeof PDFDocument,
+        blobStream: typeof blobStream,
+        BlobStream: typeof (window as any).BlobStream
+      })
 
-    // 检查模块加载状态
-    console.log('PDF模块加载状态:', {
-      PDFDocument: typeof PDFDocument,
-      blobStream: typeof blobStream,
-      BlobStream: typeof (window as any).BlobStream
-    })
+      // 创建PDF文档
+      const doc = new PDFDocument({
+        size: [width, height],
+        autoFirstPage: true,
+        margin: 0
+      })
 
-    // 创建PDF文档
-    const doc = new PDFDocument({
-      size: [width, height],
-      autoFirstPage: true,
-      margin: 0
-    })
+      console.log('PDF文档创建成功，开始写入数据...')
 
-    console.log('PDF文档创建成功，开始写入数据...')
+      // 创建blob流
+      if (typeof blobStream !== 'function') {
+        throw new Error('blobStream 模块未正确加载')
+      }
+      const stream = doc.pipe(blobStream())
 
-    // 创建blob流
-    if (typeof blobStream !== 'function') {
-      throw new Error('blobStream 模块未正确加载')
-    }
-    const stream = doc.pipe(blobStream())
+      // 将canvas图像添加到PDF
+      doc.image(base64, 0, 0, { width, height })
 
-    // 将canvas图像添加到PDF
-    doc.image(base64, 0, 0, { width, height })
+      // 完成PDF
+      doc.end()
 
-    // 完成PDF
-    doc.end()
+      console.log('PDF数据写入完成，等待生成下载链接...')
 
-    console.log('PDF数据写入完成，等待生成下载链接...')
+      // 当流完成时,创建下载链接
+      return new Promise<string>((resolve, reject) => {
+        stream.on('finish', function() {
+          try {
+            console.log('PDF流处理完成，生成下载链接...')
+            const url = stream.toBlobURL('application/pdf')
+            console.log('PDF导出成功！')
+            resolve(url)
+          } catch (error: unknown) {
+            console.error('生成下载链接失败:', error)
+            reject(error)
+          }
+        })
 
-    // 当流完成时,创建下载链接
-    return new Promise<string>((resolve, reject) => {
-      stream.on('finish', function() {
-        try {
-          console.log('PDF流处理完成，生成下载链接...')
-          const url = stream.toBlobURL('application/pdf')
-          console.log('PDF导出成功！')
-          resolve(url)
-        } catch (error: unknown) {
-          console.error('生成下载链接失败:', error)
+        stream.on('error', (error: unknown) => {
+          console.error('PDF流处理错误:', error)
           reject(error)
+        })
+      })
+    } catch (error) {
+      console.error('Canvas导出失败:', error);
+      
+      // 如果Canvas导出失败，尝试直接使用组件数据创建PDF
+      console.log('尝试直接创建PDF...');
+      
+      // 创建PDF文档
+      const doc = new PDFDocument({
+        size: [width, height],
+        autoFirstPage: true,
+        margin: 0
+      });
+      
+      // 创建blob流
+      const stream = doc.pipe(blobStream());
+      
+      // 设置白色背景
+      doc.rect(0, 0, width, height).fill('#ffffff');
+      
+      // 直接在PDF上渲染组件
+      for (const component of processedComponents) {
+        if (component.type === 'text-title' || component.type === 'text-basic') {
+          if (component.content) {
+            doc.font('Helvetica')
+               .fontSize(component.fontSize || 14)
+               .fillColor(component.color || '#000000')
+               .text(component.content, component.x, component.y, {
+                 width: component.width,
+                 align: component.textAlign || 'left'
+               });
+          }
+        } else if (component.type === 'image' && component.imageUrl) {
+          try {
+            doc.image(component.imageUrl, component.x, component.y, {
+              width: component.width,
+              height: component.height
+            });
+          } catch (err) {
+            console.error('无法在PDF中渲染图片:', err);
+          }
+        } else if (component.type === 'divider-solid') {
+          doc.moveTo(component.x, component.y + component.height / 2)
+             .lineTo(component.x + component.width, component.y + component.height / 2)
+             .lineWidth(component.thickness || 1)
+             .stroke(component.color || '#000000');
         }
-      })
-
-      stream.on('error', (error: unknown) => {
-        console.error('PDF流处理错误:', error)
-        reject(error)
-      })
-    })
+      }
+      
+      // 完成PDF
+      doc.end();
+      
+      console.log('直接创建PDF完成，等待生成下载链接...');
+      
+      // 当流完成时,创建下载链接
+      return new Promise<string>((resolve, reject) => {
+        stream.on('finish', function() {
+          try {
+            console.log('PDF流处理完成，生成下载链接...');
+            const url = stream.toBlobURL('application/pdf');
+            console.log('PDF导出成功！');
+            resolve(url);
+          } catch (error: unknown) {
+            console.error('生成下载链接失败:', error);
+            reject(error);
+          }
+        });
+        
+        stream.on('error', (error: unknown) => {
+          console.error('PDF流处理错误:', error);
+          reject(error);
+        });
+      });
+    }
   } catch (error: unknown) {
     console.error('PDF导出失败:', error)
     throw error

@@ -4,6 +4,7 @@
       v-if="!hasError"
       :src="proxyUrl"
       :alt="alt"
+      crossorigin="anonymous"
       :style="imageStyle"
       @load="handleImageLoad"
       @error="handleImageError"
@@ -62,6 +63,7 @@ const handleImageError = async () => {
       // 如果可访问，强制重新加载
       const timestamp = new Date().getTime()
       const img = document.createElement('img')
+      img.crossOrigin = 'anonymous'
       img.src = `${proxyUrl.value}${proxyUrl.value.includes('?') ? '&' : '?'}t=${timestamp}`
     } else {
       hasError.value = true
@@ -75,8 +77,16 @@ const handleImageError = async () => {
 
 onMounted(async () => {
   try {
-    await imageLoader.preloadImage(props.src)
-    handleImageLoad()
+    // 预加载图片时设置crossOrigin
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      handleImageLoad()
+    }
+    img.onerror = () => {
+      handleImageError()
+    }
+    img.src = proxyUrl.value
   } catch (error) {
     handleImageError()
   }

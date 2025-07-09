@@ -16,6 +16,7 @@ import java.net.URLConnection;
 
 @RestController
 @RequestMapping("/api/proxy")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ProxyController {
     private static final Logger logger = LoggerFactory.getLogger(ProxyController.class);
 
@@ -51,6 +52,9 @@ public class ProxyController {
                 headers.set("Content-Length", String.valueOf(contentLength));
                 headers.set("Cache-Control", "public, max-age=31536000");
                 headers.set("Access-Control-Allow-Origin", "*");
+                headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+                headers.set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept");
+                headers.set("Access-Control-Max-Age", "3600");
                 
                 return new ResponseEntity<>(imageData, headers, HttpStatus.OK);
             }

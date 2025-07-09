@@ -5,9 +5,8 @@ spring:
       max-request-size: 10MB
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/resume_king?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 
+
+
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.example.resumebuilder.entity
@@ -16,4 +15,10 @@ mybatis:
 
 aliyun:
   oss:
-    
+
+# 雪花算法配置
+snowflake:
+  datacenter-id: 1  # 数据中心ID，可根据实际部署环境调整
+  machine-id: 0     # 机器ID，设置为0将自动根据主机名生成
+  clock-backward-wait-time: 5000  # 时钟回拨最大等待时间(毫秒)
+  max-clock-backward-time: 1000   # 最大允许时钟回拨时间(毫秒)，超过此值使用借号方案

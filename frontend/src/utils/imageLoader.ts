@@ -18,6 +18,7 @@ export const imageLoader = {
   async preloadImage(url: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const img = new Image()
+      img.crossOrigin = 'anonymous'
       img.onload = () => resolve()
       img.onerror = () => reject(new Error('Image load failed'))
       img.src = this.getProxyImageUrl(url)
@@ -26,7 +27,11 @@ export const imageLoader = {
 
   async checkImageAccess(url: string): Promise<boolean> {
     try {
-      const response = await fetch(this.getProxyImageUrl(url), { method: 'HEAD' })
+      const response = await fetch(this.getProxyImageUrl(url), { 
+        method: 'HEAD',
+        mode: 'cors',
+        credentials: 'omit'
+      })
       return response.ok
     } catch {
       return false

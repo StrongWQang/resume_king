@@ -111,8 +111,10 @@ const handleFileChange = async (event: Event) => {
     img.onload = () => {
       clearTimeout(timeout)
       console.log('Image loaded successfully:', img.width, 'x', img.height)
-      imageUrl.value = processedUrl
-      emit('image-uploaded', processedUrl, img.width, img.height)
+      // 使用代理URL确保CORS安全
+      const safeUrl = imageLoader.getProxyImageUrl(processedUrl)
+      imageUrl.value = safeUrl
+      emit('image-uploaded', safeUrl, img.width, img.height)
       ElMessage.success('图片上传成功')
     }
     

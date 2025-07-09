@@ -2,6 +2,7 @@ package com.example.resumebuilder.service;
 
 import com.example.resumebuilder.entity.Resume;
 import com.example.resumebuilder.mapper.ResumeMapper;
+import com.example.resumebuilder.util.SnowflakeIdGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -43,12 +43,17 @@ public class ResumeService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private SnowflakeIdGenerator snowflakeIdGenerator;
+
     @Transactional
     public String saveResume(List<Map<String, Object>> resumeData) {
         try {
             logger.info("开始保存简历数据: {}", resumeData);
 
-            String id = UUID.randomUUID().toString();
+            // 使用雪花算法生成分布式ID
+            long snowflakeId = snowflakeIdGenerator.nextId();
+            String id = String.valueOf(snowflakeId);
             String content = objectMapper.writeValueAsString(resumeData);
             logger.debug("转换后的JSON内容: {}", content);
 
@@ -60,7 +65,7 @@ public class ResumeService {
 
             // 保存到数据库
             resumeMapper.insert(resume);
-            logger.info("简历保存成功，ID: {}", id);
+            logger.info("简历保存成功，雪花算法ID: {} (原始long值: {})", id, snowflakeId);
 
             return id;
         } catch (Exception e) {
