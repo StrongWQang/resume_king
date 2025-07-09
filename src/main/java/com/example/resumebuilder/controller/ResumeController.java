@@ -55,6 +55,45 @@ public class ResumeController {
         return ResponseEntity.ok(resumeService.getAllResumes());
     }
 
+    @GetMapping("/popular")
+    public ResponseEntity<List<Resume>> getPopularResumes(@RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(resumeService.getPopularResumes(limit));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Resume>> getUserResumes(@PathVariable String userId) {
+        return ResponseEntity.ok(resumeService.getResumesByUserId(userId));
+    }
+
+    @GetMapping("/templates")
+    public ResponseEntity<?> getTemplates(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        if (page < 1) {
+            return ResponseEntity.badRequest().body("页码必须大于0");
+        }
+        if (size < 1 || size > 50) {
+            return ResponseEntity.badRequest().body("每页数量必须在1-50之间");
+        }
+        return ResponseEntity.ok(resumeService.getTemplatesWithPagination(page, size));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateResumeStatus(
+            @PathVariable String id,
+            @RequestBody Map<String, Integer> statusUpdate) {
+        try {
+            Integer status = statusUpdate.get("status");
+            if (status == null || (status < 0 || status > 3)) {
+                return ResponseEntity.badRequest().body("无效的状态值");
+            }
+            resumeService.updateResumeStatus(id, status);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteResume(@PathVariable String id) {
         try {

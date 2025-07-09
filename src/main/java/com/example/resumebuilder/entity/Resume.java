@@ -17,5 +17,12 @@ public class Resume {
     private LocalDateTime updateTime;
     private String userId;
     private Boolean isTemplate;
-    private Integer like;
+    private Integer likeCount;
+    private Integer status;
+    
+    // 状态常量
+    public static final int STATUS_DRAFT = 0;    // 草稿
+    public static final int STATUS_PUBLISHED = 1; // 发布
+    public static final int STATUS_ARCHIVED = 2;  // 归档
+    public static final int STATUS_DELETED = 3;   // 删除
 } 

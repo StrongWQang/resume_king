@@ -77,12 +77,24 @@
               <span class="like-icon">👍</span>
               <span>{{ resume.isLiked ? "已点赞" : "点赞" }}</span>
             </button>
-            <span class="like-count">💕 {{ resume.like }}</span>
+            <span class="like-count">💕 {{ resume.likeCount || 0 }}</span>
           </div>
         </div>
       </div>
     </div>
     
+    <!-- 分页控件 -->
+    <div v-if="!loading && !error && totalPages > 0" class="pagination-container">
+      <el-pagination
+        background
+        layout="prev, pager, next"
+        :total="totalItems"
+        :page-size="pageSize"
+        :current-page="currentPage"
+        @current-change="handlePageChange"
+      />
+    </div>
+
     <!-- 预览弹窗 -->
     <div v-if="previewVisible" class="preview-modal-overlay" @click.self="closePreview">
       <div class="preview-modal">
@@ -146,7 +158,7 @@
 import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import { useResumeStore, Component } from "../store/resume";
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox, ElPagination } from 'element-plus';
 import { useRouter } from 'vue-router';
 
 const store = useResumeStore();
@@ -172,6 +184,12 @@ const selectedResume = ref<Resume | null>(null);
 // 简历原始尺寸 (A4纸的像素尺寸，假设为210mm x 297mm，以96dpi计算)
 const RESUME_WIDTH = 794;  // A4宽度
 const RESUME_HEIGHT = 1123; // A4高度
+
+// 分页相关状态
+const currentPage = ref(1);
+const pageSize = ref(12);
+const totalItems = ref(0);
+const totalPages = ref(0);
 
 // 动态计算组件样式
 const getComponentStyle = (component: Component, scaleFactor: number) => {
@@ -207,18 +225,31 @@ const processComponents = (components: Component[]) => {
   }));
 };
 
-const fetchResumes = async () => {
+const fetchResumes = async (page = 1) => {
   try {
     loading.value = true;
-    const response = await axios.get("/api/resumes/templates");
+    currentPage.value = page;
     
-    if (!response.data || !Array.isArray(response.data)) {
+    // 使用分页API获取简历模板
+    const response = await axios.get("/api/resume-square/templates", {
+      params: {
+        page: page,
+        size: pageSize.value
+      }
+    });
+    
+    if (!response.data || !response.data.templates) {
       throw new Error("Invalid response format");
     }
     
+    // 更新分页信息
+    totalItems.value = response.data.totalItems || 0;
+    totalPages.value = response.data.totalPages || 0;
+    currentPage.value = response.data.currentPage || 1;
+    
     // 获取每个简历的组件数据
     const resumesWithComponents = await Promise.all(
-      response.data.map(async (resume: Resume) => {
+      response.data.templates.map(async (resume: Resume) => {
         if (!resume || !resume.id) {
           console.error("Invalid resume data:", resume);
           return null;
@@ -253,15 +284,20 @@ const fetchResumes = async () => {
   }
 };
 
+// 处理页码变化
+const handlePageChange = (page: number) => {
+  fetchResumes(page);
+};
+
 const likeResume = async (id: number) => {
   const resume = resumes.value.find((r) => r.id === id);
   if (resume) {
     try {
       if (!resume.isLiked) {
         // 点赞
-        await axios.post(`/api/resumes/${id}/like`);
+        await axios.post(`/api/resume-square/${id}/like`);
         resume.isLiked = true;
-        resume.like += 1;
+        resume.likeCount += 1;
         // 添加动画效果
         const likeCountElement = document.querySelector(
           `.resume-card[data-id='${id}'] .like-count`
@@ -274,9 +310,9 @@ const likeResume = async (id: number) => {
         }
       } else {
         // 取消点赞
-        await axios.delete(`/api/resumes/${id}/like`);
+        await axios.delete(`/api/resume-square/${id}/like`);
         resume.isLiked = false;
-        resume.like -= 1;
+        resume.likeCount -= 1;
         // 添加动画效果
         const likeCountElement = document.querySelector(
           `.resume-card[data-id='${id}'] .like-count`
@@ -292,7 +328,7 @@ const likeResume = async (id: number) => {
       console.error("点赞操作失败:", err);
       // 操作失败时恢复原状态
       resume.isLiked = !resume.isLiked;
-      resume.like += resume.isLiked ? 1 : -1;
+      resume.likeCount += resume.isLiked ? 1 : -1;
     }
   }
 };
@@ -767,6 +803,19 @@ onMounted(() => {
 
 .close-preview-button:hover {
   background-color: #ebeef5;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin: 40px 0;
+  padding: 20px 0;
+}
+
+.el-pagination {
+  --el-pagination-bg-color: #f5f7fa;
+  --el-pagination-button-color: #409eff;
+  --el-pagination-hover-color: #42b983;
 }
 
 @media (max-width: 768px) {

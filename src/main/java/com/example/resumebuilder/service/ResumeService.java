@@ -32,6 +32,7 @@ import com.itextpdf.kernel.pdf.canvas.PdfCanvas; // Added import
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL; // Added import
+import java.util.HashMap;
 
 @Service
 public class ResumeService {
@@ -62,6 +63,12 @@ public class ResumeService {
             resume.setId(id);
             resume.setContent(content);
             resume.setCreateTime(LocalDateTime.now());
+            resume.setUpdateTime(LocalDateTime.now());
+            resume.setStatus(Resume.STATUS_PUBLISHED); // 默认为已发布状态
+            resume.setLikeCount(0); // 默认点赞数为0
+            resume.setUserId(null); // 暂时不设置用户ID
+            resume.setTitle("我的简历"); // 默认标题
+            resume.setIsTemplate(false); // 默认非模板
 
             // 保存到数据库
             resumeMapper.insert(resume);
@@ -127,13 +134,35 @@ public class ResumeService {
     @Transactional
     public void deleteResume(String id) {
         try {
-            logger.info("开始删除简历，ID: {}", id);
-            resumeMapper.deleteById(id);
-            logger.info("简历删除成功，ID: {}", id);
+            logger.info("标记简历为删除状态，ID: {}", id);
+            resumeMapper.updateStatus(id, Resume.STATUS_DELETED);
+            logger.info("简历标记为删除状态成功，ID: {}", id);
         } catch (Exception e) {
-            logger.error("删除简历失败", e);
+            logger.error("标记简历为删除状态失败", e);
             throw new RuntimeException("删除简历失败: " + e.getMessage(), e);
         }
+    }
+
+    @Transactional
+    public void updateResumeStatus(String id, int status) {
+        try {
+            logger.info("更新简历状态，ID: {}, 新状态: {}", id, status);
+            resumeMapper.updateStatus(id, status);
+            logger.info("简历状态更新成功，ID: {}", id);
+        } catch (Exception e) {
+            logger.error("更新简历状态失败", e);
+            throw new RuntimeException("更新简历状态失败: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Resume> getPopularResumes(int limit) {
+        logger.info("获取热门简历列表，数量限制: {}", limit);
+        return resumeMapper.findPopular(limit);
+    }
+
+    public List<Resume> getResumesByUserId(String userId) {
+        logger.info("获取用户简历列表，用户ID: {}", userId);
+        return resumeMapper.findByUserId(userId);
     }
 
     public byte[] generatePdf(List<Map<String, Object>> resumeData) {
@@ -293,6 +322,40 @@ public class ResumeService {
         }
     }
 
+    public List<Resume> getAllTemplates() {
+        logger.info("获取所有简历模板");
+        return resumeMapper.findAllTemplates();
+    }
+
+    public List<Resume> getTemplatesPaginated(int page, int size) {
+        int offset = (page - 1) * size;
+        logger.info("获取分页简历模板，页码: {}, 每页数量: {}, 偏移量: {}", page, size, offset);
+        return resumeMapper.findTemplatesPaginated(offset, size);
+    }
+
+    public int countTemplates() {
+        logger.info("获取简历模板总数");
+        return resumeMapper.countTemplates();
+    }
+
+    public Map<String, Object> getTemplatesWithPagination(int page, int size) {
+        int offset = (page - 1) * size;
+        List<Resume> templates = resumeMapper.findTemplatesPaginated(offset, size);
+        int total = resumeMapper.countTemplates();
+        int totalPages = (int) Math.ceil((double) total / size);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("templates", templates);
+        result.put("currentPage", page);
+        result.put("totalItems", total);
+        result.put("totalPages", totalPages);
+        result.put("pageSize", size);
+        
+        logger.info("获取分页简历模板，页码: {}, 每页数量: {}, 总数: {}, 总页数: {}", 
+            page, size, total, totalPages);
+        
+        return result;
+    }
 
 }
 
