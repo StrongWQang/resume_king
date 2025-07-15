@@ -5,6 +5,7 @@ Thumbs.db
 # 忽略依赖目录
 node_modules/
 target/
+*.class
 
 
 # 忽略构建输出
@@ -34,3 +35,4 @@ yarn-error.log*
 # 忽略 Java 编译文件
 *.class
 **/*.class
+target/*

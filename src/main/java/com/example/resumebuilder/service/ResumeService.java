@@ -53,14 +53,13 @@ public class ResumeService {
             logger.info("开始保存简历数据: {}", resumeData);
 
             // 使用雪花算法生成分布式ID
-            long snowflakeId = snowflakeIdGenerator.nextId();
-            String id = String.valueOf(snowflakeId);
+            Long snowflakeId = snowflakeIdGenerator.nextId();
             String content = objectMapper.writeValueAsString(resumeData);
             logger.debug("转换后的JSON内容: {}", content);
 
             // 创建简历实体
             Resume resume = new Resume();
-            resume.setId(id);
+            resume.setId(snowflakeId);
             resume.setContent(content);
             resume.setCreateTime(LocalDateTime.now());
             resume.setUpdateTime(LocalDateTime.now());
@@ -72,9 +71,9 @@ public class ResumeService {
 
             // 保存到数据库
             resumeMapper.insert(resume);
-            logger.info("简历保存成功，雪花算法ID: {} (原始long值: {})", id, snowflakeId);
+            logger.info("简历保存成功，ID: {}", snowflakeId);
 
-            return id;
+            return String.valueOf(snowflakeId);
         } catch (Exception e) {
             logger.error("保存简历失败", e);
             throw new RuntimeException("保存简历失败: " + e.getMessage(), e);
@@ -85,7 +84,7 @@ public class ResumeService {
         try {
             logger.info("开始获取简历数据，ID: {}", id);
 
-            Resume resume = resumeMapper.findById(id);
+            Resume resume = resumeMapper.findById(Long.valueOf(id));
             if (resume == null) {
                 logger.warn("简历不存在，ID: {}", id);
                 throw new RuntimeException("简历不存在");
@@ -108,7 +107,7 @@ public class ResumeService {
     }
 
     @Transactional
-    public void increaseLikeCount(String id) {
+    public void increaseLikeCount(Long id) {
         try {
             logger.info("增加简历点赞数，ID: {}", id);
             resumeMapper.increaseLikeCount(id);
@@ -120,7 +119,7 @@ public class ResumeService {
     }
 
     @Transactional
-    public void decreaseLikeCount(String id) {
+    public void decreaseLikeCount(Long id) {
         try {
             logger.info("减少简历点赞数，ID: {}", id);
             resumeMapper.decreaseLikeCount(id);
@@ -132,7 +131,7 @@ public class ResumeService {
     }
 
     @Transactional
-    public void deleteResume(String id) {
+    public void deleteResume(Long id) {
         try {
             logger.info("标记简历为删除状态，ID: {}", id);
             resumeMapper.updateStatus(id, Resume.STATUS_DELETED);
@@ -144,7 +143,7 @@ public class ResumeService {
     }
 
     @Transactional
-    public void updateResumeStatus(String id, int status) {
+    public void updateResumeStatus(Long id, int status) {
         try {
             logger.info("更新简历状态，ID: {}, 新状态: {}", id, status);
             resumeMapper.updateStatus(id, status);

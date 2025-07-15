@@ -13,18 +13,32 @@
       <p>{{ error }}</p>
     </div>
 
-    <div v-else class="resume-list">
-      <div
-        v-for="resume in resumes"
-        :key="resume.id"
-        class="resume-card"
-        :data-id="resume.id"
-      >
-        <div class="resume-image-container" @click="openPreview(resume)">
-          <!-- 使用类似LeftPanel.vue的渲染方式 -->
-          <div class="resume-preview-content">
-            <!-- 添加一个缩放容器来保持简历比例并填充整个区域 -->
-            <div class="resume-preview-scaling-container">
+    <template v-else>
+      <!-- 发布简历按钮 -->
+      <div class="publish-section">
+        <el-button
+          type="primary"
+          size="large"
+          @click="showPublishDialog"
+          class="publish-button"
+          icon="Plus"
+        >
+          发布我的简历模板
+        </el-button>
+      </div>
+
+      <!-- 简历列表 -->
+      <div class="resume-list">
+        <div
+          v-for="resume in resumes"
+          :key="resume.id"
+          class="resume-card"
+          :data-id="resume.idString"
+        >
+          <div class="resume-image-container" @click="openPreview(resume)">
+            <!-- 使用类似LeftPanel.vue的渲染方式 -->
+            <div class="resume-preview-content">
+              <!-- 添加一个缩放容器来保持简历比例并填充整个区域 -->
               <div 
                 v-for="component in resume.components" 
                 :key="component.id"
@@ -64,24 +78,24 @@
               <span class="click-to-preview">点击预览</span>
             </div>
           </div>
-        </div>
-        <div class="resume-content">
-          <h3 class="resume-title">{{ resume.title }}</h3>
-          <p class="resume-description">{{ resume.description }}</p>
-          <div class="actions">
-            <button
-              @click="likeResume(resume.id)"
-              class="like-button"
-              :class="{ liked: resume.isLiked }"
-            >
-              <span class="like-icon">👍</span>
-              <span>{{ resume.isLiked ? "已点赞" : "点赞" }}</span>
-            </button>
-            <span class="like-count">💕 {{ resume.likeCount || 0 }}</span>
+          <div class="resume-content">
+            <h3 class="resume-title">{{ resume.title }}</h3>
+            <p class="resume-description">{{ resume.description }}</p>
+            <div class="actions">
+              <button
+                @click="likeResume(resume)"
+                class="like-button"
+                :class="{ liked: resume.isLiked }"
+              >
+                <span class="like-icon">👍</span>
+                <span>{{ resume.isLiked ? "已点赞" : "点赞" }}</span>
+              </button>
+              <span class="like-count">💕 {{ resume.likeCount || 0 }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
     
     <!-- 分页控件 -->
     <div v-if="!loading && !error && totalPages > 0" class="pagination-container">
@@ -151,6 +165,117 @@
         </div>
       </div>
     </div>
+
+    <!-- 发布简历弹窗 -->
+    <el-dialog
+      v-model="publishDialogVisible"
+      title="发布简历模板"
+      width="50%"
+      :before-close="handlePublishDialogClose"
+    >
+      <div class="publish-dialog-content">
+        <el-form ref="publishFormRef" :model="publishForm" :rules="publishFormRules" label-width="100px">
+          <el-form-item label="简历ID" prop="resumeId">
+            <el-input
+              v-model="publishForm.resumeId"
+              placeholder="请输入要发布的简历ID"
+              @blur="validateResumeId"
+            />
+          </el-form-item>
+          <el-form-item label="模板标题" prop="title">
+            <el-input
+              v-model="publishForm.title"
+              placeholder="请输入简历模板的标题"
+              maxlength="50"
+              show-word-limit
+            />
+          </el-form-item>
+          <el-form-item label="模板描述" prop="description">
+            <el-input
+              v-model="publishForm.description"
+              type="textarea"
+              placeholder="请描述这个简历模板的特点和适用场景"
+              rows="4"
+              maxlength="200"
+              show-word-limit
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="publishDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="previewResume" :disabled="!publishForm.resumeId">
+            预览简历
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 预览简历弹窗 -->
+    <el-dialog
+      v-model="previewDialogVisible"
+      title="预览简历"
+      width="80%"
+      :before-close="handlePreviewDialogClose"
+    >
+      <div class="preview-dialog-content">
+        <div v-if="previewLoading" class="preview-loading">
+          <el-icon class="is-loading"><loading /></el-icon>
+          <p>正在加载简历数据...</p>
+        </div>
+        <div v-else-if="previewError" class="preview-error">
+          <el-icon><warning /></el-icon>
+          <p>{{ previewError }}</p>
+        </div>
+        <div v-else class="preview-resume">
+          <div class="preview-resume-content">
+            <div 
+              v-for="component in previewComponents" 
+              :key="component.id"
+              class="resume-preview-component"
+              :style="getComponentStyle(component, 0.8)"
+            >
+              <template v-if="component.type === 'text-title' || component.type === 'text-basic'">
+                {{ component.content }}
+              </template>
+              <template v-else-if="component.type === 'divider-solid'">
+                <div 
+                  class="divider"
+                  :style="{
+                    width: '100%',
+                    height: component.thickness + 'px',
+                    backgroundColor: component.color,
+                    margin: (component.padding * 0.4) + 'px 0'
+                  }"
+                ></div>
+              </template>
+              <template v-else-if="component.type === 'image'">
+                <img 
+                  :src="component.imageUrl" 
+                  :alt="component.alt || ''"
+                  class="preview-image"
+                  :style="{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: component.objectFit || 'contain'
+                  }"
+                  @error="handleImageError"
+                />
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="previewDialogVisible = false">取消</el-button>
+          <el-button type="success" @click="confirmPublish" :loading="publishLoading">
+            确认发布
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -160,12 +285,15 @@ import axios from "axios";
 import { useResumeStore, Component } from "../store/resume";
 import { ElMessage, ElMessageBox, ElPagination } from 'element-plus';
 import { useRouter } from 'vue-router';
+import { Plus, Loading, Warning } from '@element-plus/icons-vue';
 
 const store = useResumeStore();
 const router = useRouter();
 
+// 修改Resume接口定义
 interface Resume {
-  id: number;
+  id: string;  // 使用string类型
+  idString: string; // 后端返回的字符串形式ID
   title: string;
   description: string;
   like: number;
@@ -190,6 +318,40 @@ const currentPage = ref(1);
 const pageSize = ref(12);
 const totalItems = ref(0);
 const totalPages = ref(0);
+
+// 发布简历相关状态
+const publishDialogVisible = ref(false);
+const previewDialogVisible = ref(false);
+const publishForm = ref({
+  resumeId: '',
+  title: '',
+  description: ''
+});
+
+// 表单验证规则
+const publishFormRules = {
+  resumeId: [
+    { required: true, message: '请输入简历ID', trigger: 'blur' },
+    { 
+      pattern: /^\d{18,19}$/, 
+      message: '请输入正确的简历ID（18-19位数字）', 
+      trigger: 'blur' 
+    }
+  ],
+  title: [
+    { required: true, message: '请输入模板标题', trigger: 'blur' },
+    { min: 2, max: 50, message: '标题长度应在 2 到 50 个字符', trigger: 'blur' }
+  ],
+  description: [
+    { required: true, message: '请输入模板描述', trigger: 'blur' },
+    { min: 10, max: 200, message: '描述长度应在 10 到 200 个字符', trigger: 'blur' }
+  ]
+};
+const publishFormRef = ref(null);
+const previewLoading = ref(false);
+const previewError = ref('');
+const previewComponents = ref([]);
+const publishLoading = ref(false);
 
 // 动态计算组件样式
 const getComponentStyle = (component: Component, scaleFactor: number) => {
@@ -250,21 +412,21 @@ const fetchResumes = async (page = 1) => {
     // 获取每个简历的组件数据
     const resumesWithComponents = await Promise.all(
       response.data.templates.map(async (resume: Resume) => {
-        if (!resume || !resume.id) {
+        if (!resume || !resume.idString) {
           console.error("Invalid resume data:", resume);
           return null;
         }
         
         try {
           // 获取简历的组件数据
-          const componentResponse = await axios.get(`/api/resumes/${resume.id}`);
+          const componentResponse = await axios.get(`/api/resumes/${resume.idString}`);
           return {
             ...resume,
             isLiked: resume.isLiked || false,
             components: processComponents(componentResponse.data || [])
           };
         } catch (err) {
-          console.error(`获取简历组件失败: ${resume.id}`, err);
+          console.error(`获取简历组件失败: ${resume.idString}`, err);
           return {
             ...resume,
             isLiked: resume.isLiked || false,
@@ -289,47 +451,31 @@ const handlePageChange = (page: number) => {
   fetchResumes(page);
 };
 
-const likeResume = async (id: number) => {
-  const resume = resumes.value.find((r) => r.id === id);
-  if (resume) {
-    try {
-      if (!resume.isLiked) {
-        // 点赞
-        await axios.post(`/api/resume-square/${id}/like`);
-        resume.isLiked = true;
-        resume.likeCount += 1;
-        // 添加动画效果
-        const likeCountElement = document.querySelector(
-          `.resume-card[data-id='${id}'] .like-count`
-        );
-        if (likeCountElement) {
-          likeCountElement.classList.add("animated");
-          setTimeout(() => {
-            likeCountElement.classList.remove("animated");
-          }, 300);
-        }
-      } else {
-        // 取消点赞
-        await axios.delete(`/api/resume-square/${id}/like`);
-        resume.isLiked = false;
-        resume.likeCount -= 1;
-        // 添加动画效果
-        const likeCountElement = document.querySelector(
-          `.resume-card[data-id='${id}'] .like-count`
-        );
-        if (likeCountElement) {
-          likeCountElement.classList.add("animated");
-          setTimeout(() => {
-            likeCountElement.classList.remove("animated");
-          }, 300);
-        }
+const handleTemplateClick = (resume: Resume) => {
+  // 使用idString而不是id
+  router.push(`/editor?template=${resume.idString}`);
+};
+
+const likeResume = async (resume: Resume) => {
+  try {
+    if (!resume.isLiked) {
+      // 使用idString而不是id
+      await axios.post(`/api/resume-square/${resume.idString}/like`);
+      resume.isLiked = true;
+      resume.likeCount += 1;
+      // 添加动画效果
+      const likeCountElement = document.querySelector(
+        `.resume-card[data-id='${resume.idString}'] .like-count`
+      );
+      if (likeCountElement) {
+        likeCountElement.classList.add("animated");
+        setTimeout(() => {
+          likeCountElement.classList.remove("animated");
+        }, 300);
       }
-    } catch (err) {
-      console.error("点赞操作失败:", err);
-      // 操作失败时恢复原状态
-      resume.isLiked = !resume.isLiked;
-      resume.likeCount += resume.isLiked ? 1 : -1;
     }
+  } catch (error) {
+    console.error('点赞失败:', error);
   }
 };
 
@@ -371,8 +517,15 @@ const applyTemplate = async () => {
   }
   
   try {
+    // 使用idString而不是id
+    const templateId = selectedResume.value.idString;
+    
+    // 从后端获取最新的模板数据
+    const response = await axios.get(`/api/resumes/${templateId}`);
+    const templateData = response.data;
+    
     // 处理组件数据中的图片URL
-    const processedComponents = selectedResume.value.components?.map(component => {
+    const processedComponents = templateData.map(component => {
       if (component.type === 'image' && component.imageUrl) {
         // 确保图片URL是正确的
         return {
@@ -381,7 +534,7 @@ const applyTemplate = async () => {
         };
       }
       return component;
-    }) || [];
+    });
     
     // 设置到简历中
     store.setComponents(processedComponents);
@@ -392,8 +545,8 @@ const applyTemplate = async () => {
     ElMessage.success('已应用简历模板');
     closePreview();
     
-    // 导航到简历编辑页面
-    router.push('/');
+    // 导航到简历编辑页面，并传递模板ID
+    router.push(`/?template=${templateId}`);
   } catch (error) {
     console.error('应用模板失败:', error);
     ElMessage.error('应用模板失败，请重试');
@@ -422,6 +575,127 @@ const handleImageError = (e: Event) => {
   // 添加错误样式
   img.style.border = '1px solid #ff4d4f';
   img.style.backgroundColor = '#fff2f0';
+};
+
+// 发布简历相关方法
+const showPublishDialog = () => {
+  publishDialogVisible.value = true;
+  // 重置表单
+  publishForm.value = {
+    resumeId: '',
+    title: '',
+    description: ''
+  };
+  if (publishFormRef.value) {
+    publishFormRef.value.resetFields();
+  }
+};
+
+const handlePublishDialogClose = (done) => {
+  ElMessageBox.confirm('确认关闭？未保存的内容将丢失。', '提示', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    done();
+  }).catch(() => {
+    // 用户点击取消
+  });
+};
+
+const validateResumeId = async () => {
+  if (!publishForm.value.resumeId) return;
+  
+  try {
+    // 使用字符串形式的ID
+    const response = await axios.get(`/api/resumes/${publishForm.value.resumeId}`);
+    if (response.data) {
+      ElMessage.success('简历ID验证成功');
+    }
+  } catch (error) {
+    ElMessage.error('简历ID不存在，请检查后重新输入');
+    publishForm.value.resumeId = '';
+  }
+};
+
+const previewResume = async () => {
+  if (!publishFormRef.value) return;
+  
+  try {
+    await publishFormRef.value.validateField('resumeId');
+  } catch (error) {
+    return;
+  }
+  
+  previewLoading.value = true;
+  previewError.value = '';
+  previewComponents.value = [];
+  
+  try {
+    // 使用字符串形式的ID
+    const response = await axios.get(`/api/resumes/${publishForm.value.resumeId}`);
+    previewComponents.value = processComponents(response.data || []);
+    previewDialogVisible.value = true;
+    publishDialogVisible.value = false;
+  } catch (error) {
+    previewError.value = '加载简历数据失败：' + (error.response?.data?.message || error.message);
+  } finally {
+    previewLoading.value = false;
+  }
+};
+
+const handlePreviewDialogClose = (done) => {
+  previewDialogVisible.value = false;
+  publishDialogVisible.value = true;
+  done && done();
+};
+
+const confirmPublish = async () => {
+  if (!publishFormRef.value) return;
+  
+  try {
+    await publishFormRef.value.validate();
+  } catch (error) {
+    previewDialogVisible.value = false;
+    publishDialogVisible.value = true;
+    return;
+  }
+  
+  publishLoading.value = true;
+  
+  try {
+    const response = await axios.post('/api/resume-publish/submit', {
+      // 使用字符串形式的ID
+      resumeId: publishForm.value.resumeId,
+      title: publishForm.value.title,
+      description: publishForm.value.description,
+      userId: null // 暂时不设置用户ID
+    });
+    
+    if (response.data.success) {
+      ElMessage.success('简历模板发布申请提交成功！请等待管理员审核。');
+      previewDialogVisible.value = false;
+      
+      // 显示申请详情
+      ElMessageBox.alert(
+        `申请ID：${response.data.requestId}\n` +
+        '您的简历模板发布申请已提交，管理员将在1-3个工作日内完成审核。\n' +
+        '审核通过后，您的简历模板将出现在简历广场中。',
+        '申请提交成功',
+        {
+          confirmButtonText: '确定',
+          type: 'success'
+        }
+      );
+    } else {
+      throw new Error(response.data.message || '发布申请失败');
+    }
+  } catch (error) {
+    console.error('发布申请失败:', error);
+    ElMessage.error('发布申请失败：' + (error.response?.data?.message || error.message));
+  } finally {
+    publishLoading.value = false;
+  }
 };
 
 onMounted(() => {
@@ -840,5 +1114,169 @@ onMounted(() => {
     width: 300px;
     height: 424px;
   }
+}
+
+/* 发布简历相关样式 */
+.publish-section {
+  display: flex;
+  justify-content: center;
+  margin: 40px 0;
+  padding: 30px 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  border: 2px dashed #42b983;
+}
+
+.publish-button {
+  font-size: 18px;
+  padding: 15px 40px;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #42b983 0%, #369970 100%);
+  border: none;
+  box-shadow: 0 8px 16px rgba(66, 185, 131, 0.3);
+  transition: all 0.3s ease;
+}
+
+.publish-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(66, 185, 131, 0.4);
+  background: linear-gradient(135deg, #369970 0%, #2d8a5e 100%);
+}
+
+.publish-dialog-content {
+  padding: 20px 0;
+}
+
+.preview-dialog-content {
+  min-height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.preview-loading,
+.preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #666;
+}
+
+.preview-loading .el-icon {
+  font-size: 32px;
+  color: #42b983;
+  margin-bottom: 16px;
+}
+
+.preview-error .el-icon {
+  font-size: 32px;
+  color: #f56c6c;
+  margin-bottom: 16px;
+}
+
+.preview-resume {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.preview-resume-content {
+  position: relative;
+  width: 450px;
+  height: 636px; /* A4比例 */
+  background-color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer .el-button {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 10px 20px;
+}
+
+/* Element Plus 组件样式覆盖 */
+:deep(.el-dialog) {
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-dialog__header) {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 24px 16px;
+}
+
+:deep(.el-dialog__title) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: #42b983;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #42b983;
+  box-shadow: 0 0 0 1px rgba(66, 185, 131, 0.2);
+}
+
+:deep(.el-textarea__inner) {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: #42b983;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #42b983;
+  box-shadow: 0 0 0 1px rgba(66, 185, 131, 0.2);
+}
+
+:deep(.el-button--primary) {
+  background-color: #42b983;
+  border-color: #42b983;
+}
+
+:deep(.el-button--primary:hover) {
+  background-color: #369970;
+  border-color: #369970;
+}
+
+:deep(.el-button--success) {
+  background-color: #67c23a;
+  border-color: #67c23a;
+}
+
+:deep(.el-button--success:hover) {
+  background-color: #5daf34;
+  border-color: #5daf34;
 }
 </style>

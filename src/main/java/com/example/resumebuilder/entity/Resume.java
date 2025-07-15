@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Resume {
-    private String id;
+    private Long id;
     private String title;
     private String content;
     private LocalDateTime createTime;
@@ -25,4 +25,9 @@ public class Resume {
     public static final int STATUS_PUBLISHED = 1; // 发布
     public static final int STATUS_ARCHIVED = 2;  // 归档
     public static final int STATUS_DELETED = 3;   // 删除
+
+    // 获取String类型的ID，用于前端展示
+    public String getIdString() {
+        return id != null ? String.valueOf(id) : null;
+    }
 } 

@@ -37,13 +37,13 @@ public class ResumeSquareController {
 
     @PostMapping("/{id}/like")
     public ResponseEntity<Void> likeResume(@PathVariable String id) {
-        resumeService.increaseLikeCount(id);
+        resumeService.increaseLikeCount(Long.valueOf(id));
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}/like")
     public ResponseEntity<Void> unlikeResume(@PathVariable String id) {
-        resumeService.decreaseLikeCount(id);
+        resumeService.decreaseLikeCount(Long.valueOf(id));
         return ResponseEntity.ok().build();
     }
 }

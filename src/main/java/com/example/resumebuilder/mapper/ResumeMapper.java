@@ -13,7 +13,7 @@ public interface ResumeMapper {
     void insert(Resume resume);
     
     @Select("SELECT * FROM resume WHERE id = #{id} AND status != 3")
-    Resume findById(String id);
+    Resume findById(Long id);
     
     @Select("SELECT * FROM resume WHERE status = 1 ORDER BY create_time DESC")
     List<Resume> findAll();
@@ -34,17 +34,17 @@ public interface ResumeMapper {
     List<Resume> findByUserId(String userId);
     
     @Update("UPDATE resume SET status = 3 WHERE id = #{id}")
-    void deleteById(String id);
+    void deleteById(Long id);
     
     @Update("UPDATE resume SET status = #{status} WHERE id = #{id}")
-    void updateStatus(@Param("id") String id, @Param("status") int status);
+    void updateStatus(@Param("id") Long id, @Param("status") int status);
 
     @Update("UPDATE resume SET like_count = like_count + 1 WHERE id = #{id}")
-    void increaseLikeCount(String id);
+    void increaseLikeCount(Long id);
 
     @Update("UPDATE resume SET like_count = like_count - 1 WHERE id = #{id} AND like_count > 0")
-    void decreaseLikeCount(String id);
+    void decreaseLikeCount(Long id);
     
-    @Update("UPDATE resume SET content = #{content}, update_time = #{updateTime}, title = #{title} WHERE id = #{id}")
+    @Update("UPDATE resume SET content = #{content}, update_time = #{updateTime}, title = #{title}, is_template = #{isTemplate}, status = #{status} WHERE id = #{id}")
     void updateResume(Resume resume);
 }

@@ -29,14 +29,14 @@ public class ResumeController {
         long now = System.currentTimeMillis();
         Long lastTime = ipRequestTimeMap.get(ip);
         if (lastTime != null && now - lastTime < RATE_LIMIT_INTERVAL_MS) {
-            return ResponseEntity.status(429).body("请求过于频繁，请稍后再试");
+            return ResponseEntity.status(429).body(null);
         }
         ipRequestTimeMap.put(ip, now);
         try {
             String resumeId = resumeService.saveResume(resumeData);
-            return ResponseEntity.ok(resumeId);
+            return ResponseEntity.ok(String.valueOf(resumeId));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
@@ -80,7 +80,7 @@ public class ResumeController {
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateResumeStatus(
-            @PathVariable String id,
+            @PathVariable Long id,
             @RequestBody Map<String, Integer> statusUpdate) {
         try {
             Integer status = statusUpdate.get("status");
@@ -95,7 +95,7 @@ public class ResumeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteResume(@PathVariable String id) {
+    public ResponseEntity<?> deleteResume(@PathVariable Long id) {
         try {
             resumeService.deleteResume(id);
             return ResponseEntity.ok().build();

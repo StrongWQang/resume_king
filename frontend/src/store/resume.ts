@@ -35,7 +35,7 @@ export const useResumeStore = defineStore('resume', {
   state: (): ResumeState => ({
     components: [],
     selectedComponentId: null,
-    currentResumeId: localStorage.getItem('lastResumeId'),
+    currentResumeId: localStorage.getItem('lastResumeId') || null,
     history: [[]], // 初始状态
     historyIndex: 0
   }),
@@ -141,13 +141,16 @@ export const useResumeStore = defineStore('resume', {
     // 持久化保存到服务器
     async saveResume() {
       try {
-        console.log('开始保存简历数据到服务器:', this.components)
+        // 深拷贝组件数据，避免Proxy对象序列化问题
+        const componentsToSave = JSON.parse(JSON.stringify(this.components))
+        console.log('开始保存简历数据到服务器:', componentsToSave)
+        
         const response = await fetch('/api/resumes', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(this.components)
+          body: JSON.stringify(componentsToSave)
         })
         
         if (!response.ok) {
@@ -156,13 +159,17 @@ export const useResumeStore = defineStore('resume', {
           throw new Error(`保存失败: ${errorText}`)
         }
         
-        const data = await response.text()
-        console.log('保存成功，返回数据:', data)
-        this.currentResumeId = data
-        localStorage.setItem('lastResumeId', data)
-        return data
+        // 直接获取响应文本，避免JSON.parse时的数字精度问题
+        const idString = await response.text()
+        console.log('保存成功，返回数据:', idString)
+        
+        // 直接使用字符串形式的ID
+        this.currentResumeId = idString
+        localStorage.setItem('lastResumeId', idString)
+        
+        return idString
       } catch (error) {
-        console.error('保存简历失败，详细错误:', error)
+        console.error('保存简历失败:', error)
         throw error
       }
     },
@@ -183,13 +190,14 @@ export const useResumeStore = defineStore('resume', {
     // 加载简历数据
     async loadResume(id: string) {
       try {
+        // 确保使用字符串形式的ID
         const response = await fetch(`/api/resumes/${id}`)
         if (!response.ok) {
           throw new Error('加载失败')
         }
         const data = await response.json()
         this.setComponents(data)
-        this.currentResumeId = id
+        this.currentResumeId = id // 保存为字符串
         localStorage.setItem('lastResumeId', id)
       } catch (error) {
         console.error('加载简历失败:', error)

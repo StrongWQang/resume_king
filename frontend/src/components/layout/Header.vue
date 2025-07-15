@@ -22,6 +22,13 @@
           class="nav-button"
           icon="Monitor"
         >服务器监控</el-button>
+        
+        <el-button
+          type="danger"
+          @click="handleAdminClick"
+          class="nav-button"
+          icon="Key"
+        >管理员入口</el-button>
       </div>
     </div>
 
@@ -149,6 +156,36 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 管理员登录弹窗 -->
+    <el-dialog v-model="adminLoginVisible" title="管理员登录" width="400px">
+      <el-form ref="adminFormRef" :model="adminForm" :rules="adminFormRules" label-width="80px">
+        <el-form-item label="用户名" prop="username">
+          <el-input
+            v-model="adminForm.username"
+            placeholder="请输入管理员用户名"
+            @keyup.enter="handleAdminLogin"
+          />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input
+            v-model="adminForm.password"
+            type="password"
+            placeholder="请输入管理员密码"
+            show-password
+            @keyup.enter="handleAdminLogin"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="adminLoginVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleAdminLogin" :loading="adminLoginLoading">
+            登录
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </header>
 </template>
 
@@ -163,7 +200,8 @@ import {
   Document,
   Delete,
   Monitor,
-  Grid
+  Grid,
+  Key
 } from "@element-plus/icons-vue";
 import { exportPDF } from "../../utils/export";
 import { useRouter } from "vue-router";
@@ -176,6 +214,23 @@ const pdfSettingsVisible = ref(false);
 const pdfDpi = ref(4); // 默认DPI值为4
 const saveLoading = ref(false);
 let saveTimeout: number | null = null;
+
+// 管理员登录相关状态
+const adminLoginVisible = ref(false);
+const adminLoginLoading = ref(false);
+const adminForm = ref({
+  username: '',
+  password: ''
+});
+const adminFormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' }
+  ]
+};
+const adminFormRef = ref(null);
 
 const handleSave = async () => {
   if (saveLoading.value) return;
@@ -203,7 +258,7 @@ const confirmLoad = async () => {
     return;
   }
   try {
-    await store.loadResume(resumeId.value);
+    await store.loadResume(Number(resumeId.value));
     loadDialogVisible.value = false;
     ElMessage.success("加载成功");
   } catch (error) {
@@ -393,7 +448,7 @@ const copyResumeId = () => {
       typeof navigator.clipboard.writeText === "function"
     ) {
       navigator.clipboard
-        .writeText(store.currentResumeId)
+        .writeText(String(store.currentResumeId))
         .then(() => {
           ElMessage.success("简历ID已复制");
         })
@@ -403,7 +458,7 @@ const copyResumeId = () => {
     } else {
       // 降级方案：用 input + execCommand
       const input = document.createElement("input");
-      input.value = store.currentResumeId;
+      input.value = String(store.currentResumeId);
       document.body.appendChild(input);
       input.select();
       try {
@@ -423,6 +478,64 @@ const handleResumeSquareClick = () => {
 
 const handleServerMonitorClick = () => {
   router.push("/server-monitor");
+};
+
+const handleAdminClick = () => {
+  adminLoginVisible.value = true;
+  // 重置表单
+  adminForm.value = {
+    username: '',
+    password: ''
+  };
+  if (adminFormRef.value) {
+    adminFormRef.value.resetFields();
+  }
+};
+
+const handleAdminLogin = async () => {
+  if (!adminFormRef.value) return;
+  
+  try {
+    await adminFormRef.value.validate();
+  } catch (error) {
+    return;
+  }
+  
+  adminLoginLoading.value = true;
+  
+  try {
+    const response = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: adminForm.value.username,
+        password: adminForm.value.password
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      ElMessage.success('登录成功');
+      adminLoginVisible.value = false;
+      
+      // 存储管理员信息到localStorage
+      localStorage.setItem('adminToken', result.token);
+      localStorage.setItem('adminUser', JSON.stringify(result.user));
+      
+      // 跳转到审批管理页面
+      router.push('/approval-management');
+    } else {
+      throw new Error(result.message || '登录失败');
+    }
+  } catch (error) {
+    console.error('管理员登录失败:', error);
+    ElMessage.error('登录失败：' + error.message);
+  } finally {
+    adminLoginLoading.value = false;
+  }
 };
 </script>
 

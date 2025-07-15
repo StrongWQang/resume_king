@@ -83,6 +83,23 @@ public class SnowflakeIdGenerator {
     }
     
     /**
+     * 分析雪花ID的组成部分
+     */
+    public static void analyzeId(long id) {
+        long timestamp = (id >> TIMESTAMP_LEFT) + START_TIMESTAMP;
+        long datacenterId = (id >> DATACENTER_LEFT) & MAX_DATACENTER_NUM;
+        long machineId = (id >> MACHINE_LEFT) & MAX_MACHINE_NUM;
+        long sequence = id & MAX_SEQUENCE;
+        
+        logger.info("ID分析 - ID: {}", id);
+        logger.info("时间戳: {} ({})", timestamp, new java.util.Date(timestamp));
+        logger.info("数据中心ID: {}", datacenterId);
+        logger.info("机器ID: {}", machineId);
+        logger.info("序列号: {}", sequence);
+        logger.info("二进制形式: {}", String.format("%64s", Long.toBinaryString(id)).replace(' ', '0'));
+    }
+
+    /**
      * 生成下一个ID
      */
     public synchronized long nextId() {
@@ -101,18 +118,32 @@ public class SnowflakeIdGenerator {
                 timestamp = tilNextMillis(lastTimestamp);
             }
         } else {
-            // 新的毫秒，序列号重置
-            sequence = 0L;
+            // 新的毫秒，使用随机起始序列号，但确保不超过最大值
+            sequence = ThreadLocalRandom.current().nextLong(0, MAX_SEQUENCE);
         }
         
         lastTimestamp = timestamp;
         totalGenerated.incrementAndGet();
         
-        // 构造ID
-        return ((timestamp - START_TIMESTAMP) << TIMESTAMP_LEFT)
+        // 构造ID并验证
+        long id = ((timestamp - START_TIMESTAMP) << TIMESTAMP_LEFT)
                 | (datacenterId << DATACENTER_LEFT)
                 | (machineId << MACHINE_LEFT)
                 | sequence;
+                
+        // 验证生成的ID是否合法
+        if (id < 0) {
+            logger.error("生成了负数ID: {}, timestamp: {}, datacenter: {}, machine: {}, sequence: {}", 
+                id, timestamp, datacenterId, machineId, sequence);
+            // 紧急处理：重新生成一个正数ID
+            sequence = ThreadLocalRandom.current().nextLong(0, MAX_SEQUENCE / 2);
+            id = ((timestamp - START_TIMESTAMP) << TIMESTAMP_LEFT)
+                | (datacenterId << DATACENTER_LEFT)
+                | (machineId << MACHINE_LEFT)
+                | sequence;
+        }
+        
+        return id;
     }
     
     /**

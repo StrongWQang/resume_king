@@ -15,6 +15,14 @@ const routes = [
     path: '/server-monitor',
     name: 'ServerMonitor',
     component: () => import('../views/ServerMonitorView.vue')
+  },
+  {
+    path: '/approval-management',
+    name: 'ApprovalManagement',
+    component: () => import('../views/ApprovalManagementView.vue'),
+    meta: {
+      requiresAuth: true
+    }
   }
 ]
 
