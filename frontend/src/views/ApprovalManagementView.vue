@@ -3,6 +3,7 @@
     <div class="management-header">
       <h1 class="page-title">审批管理</h1>
       <div class="header-actions">
+        <el-button @click="handleServerMonitor" type="warning" icon="Monitor">服务器监控</el-button>
         <el-button @click="refreshData" icon="Refresh">刷新</el-button>
         <el-button @click="handleLogout" type="danger" icon="SwitchButton">退出登录</el-button>
       </div>
@@ -326,7 +327,8 @@ import {
   Remove, 
   View,
   Loading,
-  Warning
+  Warning,
+  Monitor
 } from '@element-plus/icons-vue';
 import axios from 'axios';
 
@@ -768,6 +770,10 @@ const confirmApproval = async () => {
   }
 };
 
+const handleServerMonitor = () => {
+  router.push("/server-monitor");
+};
+
 // 页面初始化
 onMounted(async () => {
   // 检查管理员登录状态
@@ -808,7 +814,8 @@ onMounted(async () => {
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  align-items: center;
 }
 
 .statistics-panel {

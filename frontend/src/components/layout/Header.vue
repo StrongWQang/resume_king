@@ -8,28 +8,14 @@
       </div>
       
       <!-- 导航按钮组 -->
-      <div class="nav-buttons">
+      <nav class="nav-menu">
         <el-button
           type="info"
           @click="handleResumeSquareClick"
           class="nav-button"
           icon="Grid"
         >简历广场</el-button>
-        
-        <el-button
-          type="warning"
-          @click="handleServerMonitorClick"
-          class="nav-button"
-          icon="Monitor"
-        >服务器监控</el-button>
-        
-        <el-button
-          type="danger"
-          @click="handleAdminClick"
-          class="nav-button"
-          icon="Key"
-        >管理员入口</el-button>
-      </div>
+      </nav>
     </div>
 
     <!-- 右侧区域：操作按钮 -->
@@ -46,51 +32,57 @@
       </div>
 
       <!-- 操作按钮组 -->
-      <div class="action-buttons">
+      <div class="action-toolbar">
         <!-- 文件操作组 -->
-        <div class="button-group file-actions">
-          <el-button
-            type="primary"
-            @click="handleSave"
-            :loading="saveLoading"
-            :disabled="saveLoading"
-            icon="Document"
-          >保存</el-button>
-          
-          <el-button 
-            type="danger" 
-            @click="handleClear"
-            icon="Delete"
-          >清空</el-button>
+        <div class="action-group">
+          <div class="group-label">文件</div>
+          <div class="group-buttons">
+            <el-button
+              type="primary"
+              @click="handleSave"
+              :loading="saveLoading"
+              :disabled="saveLoading"
+              icon="Document"
+            >保存</el-button>
+            
+            <el-button 
+              type="danger" 
+              @click="handleClear"
+              icon="Delete"
+            >清空</el-button>
+          </div>
         </div>
         
         <!-- 导入导出组 -->
-        <div class="button-group io-actions">
-          <el-dropdown @command="handleImportCommand">
-            <el-button type="primary">
-              导入简历
-              <el-icon class="el-icon--right"><arrow-down /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="load">根据ID加载简历</el-dropdown-item>
-                <el-dropdown-item command="import">导入模板JSON</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          
-          <el-dropdown @command="handleExportCommand">
-            <el-button type="success">
-              导出简历
-              <el-icon class="el-icon--right"><arrow-down /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="pdf-settings">导出PDF</el-dropdown-item>
-                <el-dropdown-item command="template">导出模板JSON</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+        <div class="action-group">
+          <div class="group-label">导入/导出</div>
+          <div class="group-buttons">
+            <el-dropdown @command="handleImportCommand">
+              <el-button type="primary">
+                导入
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="load">根据ID加载简历</el-dropdown-item>
+                  <el-dropdown-item command="import">导入模板JSON</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            
+            <el-dropdown @command="handleExportCommand">
+              <el-button type="success">
+                导出
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="pdf-settings">导出PDF</el-dropdown-item>
+                  <el-dropdown-item command="template">导出模板JSON</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
       </div>
     </div>
@@ -434,7 +426,33 @@ const handleClear = () => {
     });
 };
 
+// 添加logo点击计数器
+const logoClickCount = ref(0);
+const logoClickTimer = ref<number | null>(null);
+
 const handleLogoClick = () => {
+  logoClickCount.value++;
+  
+  // 清除之前的定时器
+  if (logoClickTimer.value) {
+    clearTimeout(logoClickTimer.value);
+  }
+  
+  // 设置新的定时器，2秒后重置点击次数
+  logoClickTimer.value = window.setTimeout(() => {
+    logoClickCount.value = 0;
+  }, 2000);
+  
+  // 检查是否达到三次点击
+  if (logoClickCount.value === 3) {
+    logoClickCount.value = 0; // 重置点击次数
+    if (logoClickTimer.value) {
+      clearTimeout(logoClickTimer.value);
+    }
+    handleAdminClick(); // 显示管理员登录弹窗
+    return;
+  }
+  
   router.push("/");
 };
 
@@ -474,10 +492,6 @@ const copyResumeId = () => {
 
 const handleResumeSquareClick = () => {
   router.push("/resume-square");
-};
-
-const handleServerMonitorClick = () => {
-  router.push("/server-monitor");
 };
 
 const handleAdminClick = () => {
@@ -542,7 +556,7 @@ const handleAdminLogin = async () => {
 <style scoped>
 .header {
   display: flex;
-  justify-content: space-between; /* Distribute space between left and right */
+  justify-content: space-between;
   align-items: center;
   padding: 0 20px;
   height: 60px;
@@ -554,46 +568,54 @@ const handleAdminLogin = async () => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 20px; /* Space between logo and nav buttons */
+  gap: 24px; /* 增加间距 */
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px; /* Space between right items */
+  gap: 20px;
 }
 
-.nav-buttons {
+/* 导航菜单样式 */
+.nav-menu {
   display: flex;
-  gap: 10px; /* Space between nav buttons */
+  gap: 12px; /* 减小按钮间距 */
+  padding: 0 8px;
+  border-left: 1px solid #e8f5e9; /* 添加分隔线 */
+  height: 40px;
+  align-items: center;
 }
 
 .nav-button {
-  font-size: 16px; /* Larger font size */
-  padding: 10px 20px; /* Larger padding */
-  transform: scale(1.1); /* Slightly larger button */
+  font-size: 14px; /* 稍微减小字体 */
+  padding: 8px 16px; /* 调整内边距 */
   transition: all 0.3s ease;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .nav-button:hover {
-  transform: scale(1.15); /* Even larger on hover */
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2); /* More prominent shadow */
+  transform: translateY(-2px); /* 悬停时上移效果 */
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 
-.action-buttons {
+/* 操作工具栏样式 */
+.action-toolbar {
   display: flex;
-  gap: 16px; /* Space between button groups */
+  gap: 16px;
+  align-items: flex-start;
 }
 
-.button-group {
+.action-group {
   display: flex;
-  gap: 10px; /* Space between buttons within a group */
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
   position: relative;
 }
 
-/* Add subtle divider between button groups */
-.button-group.file-actions::after {
+.action-group:not(:last-child)::after {
   content: '';
   position: absolute;
   right: -8px;
@@ -601,6 +623,17 @@ const handleAdminLogin = async () => {
   height: 70%;
   width: 1px;
   background-color: #e8f5e9;
+}
+
+.group-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 4px;
+}
+
+.group-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 .logo {
@@ -658,12 +691,12 @@ const handleAdminLogin = async () => {
 .copy-icon {
   cursor: pointer;
   margin-left: 4px;
-  color: #4caf50; /* Match primary color */
+  color: #4caf50;
   transition: all 0.2s ease;
 }
 
 .copy-icon:hover {
-  color: #2e7d32; /* Darker on hover */
+  color: #2e7d32;
   transform: scale(1.2);
 }
 
@@ -713,21 +746,13 @@ const handleAdminLogin = async () => {
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
 }
 
-:deep(
-    .el-button:not(.el-button--primary):not(.el-button--danger):not(
-        .el-button--success
-      )
-  ) {
+:deep(.el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--success)) {
   background-color: #ffffff;
   border-color: #e8f5e9;
   color: #4caf50;
 }
 
-:deep(
-    .el-button:not(.el-button--primary):not(.el-button--danger):not(
-        .el-button--success
-      ):hover
-  ) {
+:deep(.el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--success):hover) {
   color: #2e7d32;
   border-color: #4caf50;
   background-color: #f1f8e9;
@@ -811,13 +836,24 @@ const handleAdminLogin = async () => {
 
 /* 响应式调整 */
 @media (max-width: 1024px) {
-  .action-buttons {
+  .action-toolbar {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
   
-  .button-group.file-actions::after {
+  .action-group:not(:last-child)::after {
     display: none;
+  }
+  
+  .action-group {
+    width: 100%;
+    border-bottom: 1px solid #e8f5e9;
+    padding-bottom: 8px;
+  }
+  
+  .group-buttons {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 
@@ -826,16 +862,43 @@ const handleAdminLogin = async () => {
     flex-direction: column;
     height: auto;
     padding: 10px;
-    gap: 10px;
+    gap: 15px;
   }
   
   .header-left, .header-right {
     width: 100%;
+  }
+  
+  .header-left {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .nav-menu {
+    width: 100%;
+    justify-content: space-between;
+    border-left: none;
+    border-top: 1px solid #e8f5e9;
+    padding-top: 12px;
+  }
+  
+  .resume-id-area {
+    width: 100%;
     justify-content: center;
   }
   
-  .nav-buttons {
-    margin-top: 10px;
+  .action-toolbar {
+    width: 100%;
+  }
+  
+  .group-buttons {
+    flex-direction: row;
+    width: 100%;
+  }
+  
+  .group-buttons .el-button,
+  .group-buttons .el-dropdown {
+    flex: 1;
   }
 }
 </style>

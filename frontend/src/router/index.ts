@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const routes = [
   {
@@ -14,7 +15,10 @@ const routes = [
   {
     path: '/server-monitor',
     name: 'ServerMonitor',
-    component: () => import('../views/ServerMonitorView.vue')
+    component: () => import('../views/ServerMonitorView.vue'),
+    meta: {
+      requiresAuth: true
+    }
   },
   {
     path: '/approval-management',
@@ -29,6 +33,20 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 添加路由守卫
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuth) {
+    // 检查是否有管理员token
+    const adminToken = localStorage.getItem('adminToken')
+    if (!adminToken) {
+      ElMessage.error('请先登录管理员账号')
+      next('/')
+      return
+    }
+  }
+  next()
 })
 
 export default router

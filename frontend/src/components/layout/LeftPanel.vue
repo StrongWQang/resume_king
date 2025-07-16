@@ -326,10 +326,10 @@ const handleTemplateSelect = async (templateId: string) => {
 }
 
 const templates = [
-  { id: '1a279f1f-4af0-495c-9a10-c3f8e92b124e', name: '作者强推模板' },
-  { id: 'd5ec40df-3ee3-47e6-95e0-f7c251961899', name: '简约现代风格' },
-  { id: 'c90222fa-e4ec-4e2f-8cda-881d1fa0c8b6', name: '创意设计风格' },
-  { id: '32de6bc0-d07c-43bd-85b6-ac00020295e4', name: '专业商务风格' }
+  { id: '600244900495353854', name: '作者强推模板' },
+  { id: '600245064266147579', name: '简约现代风格' },
+  { id: '600245077067163431', name: '创意设计风格' },
+  { id: '600245104116230501', name: '专业商务风格' }
 ]
 
 // 处理图片URL
