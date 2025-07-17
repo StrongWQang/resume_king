@@ -97,4 +97,101 @@ public class ResumePublishRequest {
                this.status == ApprovalStatus.REJECTED || 
                this.status == ApprovalStatus.CANCELLED;
     }
+    
+    // 手动添加getter/setter方法以解决Lombok编译问题
+    public Long getId() {
+        return id;
+    }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+    
+    public Long getResumeId() {
+        return resumeId;
+    }
+    
+    public void setResumeId(Long resumeId) {
+        this.resumeId = resumeId;
+    }
+    
+    public String getUserId() {
+        return userId;
+    }
+    
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+    
+    public String getTitle() {
+        return title;
+    }
+    
+    public void setTitle(String title) {
+        this.title = title;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public ApprovalStatus getStatus() {
+        return status;
+    }
+    
+    public void setStatus(ApprovalStatus status) {
+        this.status = status;
+    }
+    
+    public LocalDateTime getSubmitTime() {
+        return submitTime;
+    }
+    
+    public void setSubmitTime(LocalDateTime submitTime) {
+        this.submitTime = submitTime;
+    }
+    
+    public LocalDateTime getApproveTime() {
+        return approveTime;
+    }
+    
+    public void setApproveTime(LocalDateTime approveTime) {
+        this.approveTime = approveTime;
+    }
+    
+    public String getApproverId() {
+        return approverId;
+    }
+    
+    public void setApproverId(String approverId) {
+        this.approverId = approverId;
+    }
+    
+    public String getRejectReason() {
+        return rejectReason;
+    }
+    
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
+    }
+    
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+    
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+    
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+    
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
 } 

@@ -47,4 +47,18 @@ public interface ResumeMapper {
     
     @Update("UPDATE resume SET content = #{content}, update_time = #{updateTime}, title = #{title}, is_template = #{isTemplate}, status = #{status} WHERE id = #{id}")
     void updateResume(Resume resume);
+
+    @Update("<script>" +
+            "UPDATE resume SET " +
+            "<trim prefixOverrides=','>" +
+            "<if test='content != null'>, content = #{content}</if>" +
+            "<if test='updateTime != null'>, update_time = #{updateTime}</if>" +
+            "<if test='title != null'>, title = #{title}</if>" +
+            "<if test='status != null'>, status = #{status}</if>" +
+            "<if test='isTemplate != null'>, is_template = #{isTemplate}</if>" +
+            "<if test='likeCount != null'>, like_count = #{likeCount}</if>" +
+            "</trim>" +
+            "WHERE id = #{id}" +
+            "</script>")
+    void update(Resume resume);
 }

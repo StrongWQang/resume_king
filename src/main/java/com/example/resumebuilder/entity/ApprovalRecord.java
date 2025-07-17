@@ -103,4 +103,69 @@ public class ApprovalRecord {
                 return "未知结果";
         }
     }
+    
+    // 手动添加getter/setter方法以解决Lombok编译问题
+    public String getId() {
+        return id;
+    }
+    
+    public void setId(String id) {
+        this.id = id;
+    }
+    
+    public Long getRequestId() {
+        return requestId;
+    }
+    
+    public void setRequestId(Long requestId) {
+        this.requestId = requestId;
+    }
+    
+    public ResumePublishRequest.ApprovalStatus getPreviousStatus() {
+        return previousStatus;
+    }
+    
+    public void setPreviousStatus(ResumePublishRequest.ApprovalStatus previousStatus) {
+        this.previousStatus = previousStatus;
+    }
+    
+    public ResumePublishRequest.ApprovalStatus getCurrentStatus() {
+        return currentStatus;
+    }
+    
+    public void setCurrentStatus(ResumePublishRequest.ApprovalStatus currentStatus) {
+        this.currentStatus = currentStatus;
+    }
+    
+    public String getApproverId() {
+        return approverId;
+    }
+    
+    public void setApproverId(String approverId) {
+        this.approverId = approverId;
+    }
+    
+    public OperationType getOperation() {
+        return operation;
+    }
+    
+    public void setOperation(OperationType operation) {
+        this.operation = operation;
+    }
+    
+    public String getComment() {
+        return comment;
+    }
+    
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+    
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+    
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
 } 

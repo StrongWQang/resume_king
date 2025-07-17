@@ -87,6 +87,33 @@
       </div>
     </div>
 
+      <!-- 用户登录/个人中心 -->
+        <div v-if="!isUserLoggedIn" class="user-actions">
+          <el-button @click="userLoginVisible = true" class="nav-button">
+            <el-icon><User /></el-icon>
+            登录
+          </el-button>
+        </div>
+        <div v-else class="user-info">
+          <el-dropdown @command="handleUserCommand">
+            <span class="user-dropdown">
+              <el-avatar :size="32" :src="userInfo.avatar">
+                {{ getAvatarText(userInfo) }}
+              </el-avatar>
+              <span class="username">{{ userInfo.nickname || userInfo.username || '未知用户' }}</span>
+              <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                <el-dropdown-item command="my-resumes">我的简历</el-dropdown-item>
+                <el-dropdown-item command="settings">设置</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+
     <!-- 对话框部分保持不变 -->
     <!-- 加载简历对话框 -->
     <el-dialog v-model="loadDialogVisible" title="加载简历" width="30%">
@@ -149,6 +176,12 @@
       </template>
     </el-dialog>
 
+    <!-- 用户登录/注册弹窗 -->
+    <UserLoginDialog 
+      v-model="userLoginVisible" 
+      @login-success="handleUserLoginSuccess"
+    />
+
     <!-- 管理员登录弹窗 -->
     <el-dialog v-model="adminLoginVisible" title="管理员登录" width="400px">
       <el-form ref="adminFormRef" :model="adminForm" :rules="adminFormRules" label-width="80px">
@@ -182,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useResumeStore } from "../../store/resume";
 import { 
@@ -193,12 +226,15 @@ import {
   Delete,
   Monitor,
   Grid,
-  Key
+  Key,
+  User
 } from "@element-plus/icons-vue";
 import { exportPDF } from "../../utils/export";
 import { useRouter } from "vue-router";
+import UserLoginDialog from "../common/UserLoginDialog.vue";
 
 const store = useResumeStore();
+const router = useRouter();
 const loadDialogVisible = ref(false);
 const resumeId = ref("");
 const importDialogVisible = ref(false);
@@ -206,6 +242,16 @@ const pdfSettingsVisible = ref(false);
 const pdfDpi = ref(4); // 默认DPI值为4
 const saveLoading = ref(false);
 let saveTimeout: number | null = null;
+
+// 用户登录相关状态
+const userLoginVisible = ref(false);
+const userInfo = ref(null);
+const userToken = ref(null);
+
+// 计算用户登录状态
+const isUserLoggedIn = computed(() => {
+  return userToken.value !== null && userInfo.value !== null;
+});
 
 // 管理员登录相关状态
 const adminLoginVisible = ref(false);
@@ -224,14 +270,78 @@ const adminFormRules = {
 };
 const adminFormRef = ref(null);
 
+// 检查用户登录状态
+const checkUserLoginStatus = () => {
+  const token = localStorage.getItem('userToken');
+  const user = localStorage.getItem('userInfo');
+  
+  if (token && user) {
+    userToken.value = token;
+    userInfo.value = JSON.parse(user);
+  }
+};
+
+// 用户登录成功处理
+const handleUserLoginSuccess = (user) => {
+  userInfo.value = user;
+  userToken.value = localStorage.getItem('userToken');
+  ElMessage.success('登录成功');
+};
+
+// 用户操作命令处理
+const handleUserCommand = (command) => {
+  switch (command) {
+    case 'profile':
+      router.push('/user/profile');
+      break;
+    case 'my-resumes':
+      router.push('/user/resumes');
+      break;
+    case 'settings':
+      router.push('/user/settings');
+      break;
+    case 'logout':
+      handleUserLogout();
+      break;
+  }
+};
+
+// 用户登出
+const handleUserLogout = () => {
+  ElMessageBox.confirm('确定要退出登录吗？', '确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userInfo');
+    userToken.value = null;
+    userInfo.value = null;
+    ElMessage.success('已退出登录');
+  }).catch(() => {
+    // 用户取消退出
+  });
+};
+
 const handleSave = async () => {
   if (saveLoading.value) return;
+  
+  // 检查用户登录状态
+  if (!isUserLoggedIn.value) {
+    userLoginVisible.value = true;
+    return;
+  }
+  
   saveLoading.value = true;
   try {
     const id = await store.saveResume();
     ElMessage.success(`保存成功，简历ID：${id}`);
   } catch (error) {
-    ElMessage.error("保存失败");
+    if (error.message.includes('登录')) {
+      userLoginVisible.value = true;
+    } else {
+      ElMessage.error("保存失败");
+    }
   } finally {
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = window.setTimeout(() => {
@@ -456,8 +566,6 @@ const handleLogoClick = () => {
   router.push("/");
 };
 
-const router = useRouter();
-
 const copyResumeId = () => {
   if (store.currentResumeId) {
     // 先判断 clipboard API 是否可用
@@ -551,6 +659,25 @@ const handleAdminLogin = async () => {
     adminLoginLoading.value = false;
   }
 };
+
+// 组件挂载时检查用户登录状态
+onMounted(() => {
+  checkUserLoginStatus();
+});
+
+// 在script setup部分添加getAvatarText函数
+const getAvatarText = (user: any) => {
+  if (user?.avatar) {
+    return '' // 如果有头像，则不显示文本
+  }
+  if (user?.nickname) {
+    return user.nickname.charAt(0)
+  }
+  if (user?.username) {
+    return user.username.charAt(0)
+  }
+  return 'U' // 默认显示
+}
 </script>
 
 <style scoped>

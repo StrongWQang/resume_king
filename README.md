@@ -214,7 +214,7 @@ npx vite build
 1.将前端打包为 dist 放到  /mydata/nginx/html/dist 目录下
 
 nginx配置放到   /mydata/nginx/conf/nginx.conf 目录下
-
+![img_1.png](img_1.png)
 
 docker run -d \
 --name nginx \
@@ -224,4 +224,23 @@ docker run -d \
 --network resume \
 nginx
 
+
+
+# shardingproxy
+docker pull apache/shardingsphere-proxy:5.5.2
+
+docker run -d --name tmp --entrypoint=bash apache/shardingsphere-proxy:5.5.2
+
+docker cp tmp:/opt/shardingsphere-proxy/conf /mydata/shardingproxy/conf
+
+docker run -d \
+-v /mydata/sharding-prox/conf/:/opt/shardingsphere-proxy/conf \
+-v /mydata/sharding-prox/ext-lib:/opt/shardingsphere-proxy/ext-lib \
+-e ES_JAVA_OPTS="-Xmx128m -Xms128m -Xmn64m" \
+-p 3321:3307 \
+--name server-proxy-a \
+--network resume \
+apache/shardingsphere-proxy:5.4.1
+
+mv mysql-connector-java-8.0.22.jar  /mydata/sharding-prox/ext-lib/
 

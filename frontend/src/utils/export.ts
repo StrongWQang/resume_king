@@ -1,4 +1,5 @@
 import { Component } from '../store/resume'
+import { imageLoader } from './imageLoader'
 
 // 从全局对象获取 PDFKit（在 index.html 中通过 CDN 加载）
 // const { PDFDocument } = window.PDF as any // 移除原有静态获取
@@ -327,9 +328,7 @@ export const exportPDF = async (
       if (component.type === 'image' && component.imageUrl) {
         return {
           ...component,
-          imageUrl: component.imageUrl.match(/^https?:\/\//) ? 
-            `/api/proxy/image?url=${encodeURIComponent(component.imageUrl)}` : 
-            component.imageUrl
+          imageUrl: imageLoader.getProxyImageUrl(component.imageUrl)
         };
       }
       return component;

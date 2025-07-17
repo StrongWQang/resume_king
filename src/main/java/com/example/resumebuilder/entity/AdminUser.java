@@ -52,31 +52,27 @@ public class AdminUser {
         return this.status == UserStatus.ACTIVE;
     }
     
+    // 业务方法：更新最后登录时间
+    public void updateLastLogin() {
+        this.updateTime = LocalDateTime.now();
+    }
+    
     // 业务方法：获取状态显示名称
     public String getStatusDisplayName() {
-        switch (this.status) {
-            case ACTIVE:
-                return "活跃";
-            case INACTIVE:
-                return "禁用";
-            default:
-                return "未知";
-        }
+        return this.status == UserStatus.ACTIVE ? "活跃" : "禁用";
     }
     
-    // 业务方法：更新密码
-    public void updatePassword(String newPassword) {
-        this.password = newPassword;
-        this.updateTime = LocalDateTime.now();
+    // 业务方法：验证用户权限
+    public boolean canLogin() {
+        return isActive();
     }
     
-    // 业务方法：更新邮箱
-    public void updateEmail(String newEmail) {
-        this.email = newEmail;
-        this.updateTime = LocalDateTime.now();
+    // 业务方法：验证管理权限
+    public boolean canManage() {
+        return isActive();
     }
     
-    // 业务方法：检查是否可以执行审批操作
+    // 业务方法：验证审批权限
     public boolean canApprove() {
         return isActive();
     }
@@ -97,5 +93,62 @@ public class AdminUser {
         safeUser.setCreateTime(this.createTime);
         safeUser.setUpdateTime(this.updateTime);
         return safeUser;
+    }
+    
+    // 手动添加getter/setter方法以解决Lombok编译问题
+    public String getId() {
+        return id;
+    }
+    
+    public void setId(String id) {
+        this.id = id;
+    }
+    
+    public String getUsername() {
+        return username;
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    
+    public String getPassword() {
+        return password;
+    }
+    
+    public void setPassword(String password) {
+        this.password = password;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
+    public UserStatus getStatus() {
+        return status;
+    }
+    
+    public void setStatus(UserStatus status) {
+        this.status = status;
+    }
+    
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+    
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+    
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+    
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
     }
 } 

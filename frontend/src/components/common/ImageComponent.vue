@@ -266,15 +266,12 @@ const handleImageError = (e: Event) => {
     src: img.src,
     alt: img.alt,
     naturalWidth: img.naturalWidth,
-    naturalHeight: img.naturalHeight
+    naturalHeight: img.naturalHeight,
+    originalSrc: props.component.imageUrl
   })
   
-  // 使用全局默认图片
-  img.src = '/src/template/default.png'
-  
-  // 添加错误样式
-  img.style.border = '1px solid #ff4d4f'
-  img.style.backgroundColor = '#fff2f0'
+  // 使用imageLoader的统一错误处理方法
+  imageLoader.handleImageError(img, '/logo-large.jpg')
 }
 
 onMounted(() => {

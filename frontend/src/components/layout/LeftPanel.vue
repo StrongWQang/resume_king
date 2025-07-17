@@ -207,6 +207,7 @@ import { Document, Picture, ArrowDown, Minus, Search } from '@element-plus/icons
 import { useResumeStore } from '../../store/resume'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
+import { imageLoader } from '../../utils/imageLoader'
 
 const store = useResumeStore()
 const expandedItems = ref<string[]>([])
@@ -335,22 +336,24 @@ const templates = [
 // 处理图片URL
 const getImageUrl = (src: string) => {
   if (!src) return ''
-  console.log('处理图片URL:', src)
-  // 使用代理服务器加载图片
-  return `/api/proxy/image?url=${encodeURIComponent(src)}`
+  console.log('LeftPanel - 处理图片URL:', src)
+  // 使用imageLoader统一处理URL
+  const processedUrl = imageLoader.getProxyImageUrl(src)
+  console.log('LeftPanel - 处理后URL:', processedUrl)
+  return processedUrl
 }
 
 // 处理模板数据中的图片URL
 const processTemplateData = (data: any[]) => {
-  console.log('处理模板数据:', data)
+  console.log('LeftPanel - 处理模板数据:', data)
   return data.map(component => {
     if (component.type === 'image' && component.imageUrl) {
-      console.log('处理图片组件:', component)
+      console.log('LeftPanel - 处理图片组件:', component)
       const processedComponent = {
         ...component,
         imageUrl: getImageUrl(component.imageUrl)
       }
-      console.log('处理后的图片组件:', processedComponent)
+      console.log('LeftPanel - 处理后的图片组件:', processedComponent)
       return processedComponent
     }
     return component

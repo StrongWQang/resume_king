@@ -13,6 +13,30 @@ const routes = [
     component: () => import('../views/ResumeSquareView.vue')
   },
   {
+    path: '/user/resumes',
+    name: 'UserResumes',
+    component: () => import('../views/UserResumeView.vue'),
+    meta: {
+      requiresUserAuth: true
+    }
+  },
+  {
+    path: '/user/profile',
+    name: 'UserProfile',
+    component: () => import('../views/UserProfileView.vue'),
+    meta: {
+      requiresUserAuth: true
+    }
+  },
+  {
+    path: '/user/settings',
+    name: 'UserSettings',
+    component: () => import('../views/UserSettingsView.vue'),
+    meta: {
+      requiresUserAuth: true
+    }
+  },
+  {
     path: '/server-monitor',
     name: 'ServerMonitor',
     component: () => import('../views/ServerMonitorView.vue'),
@@ -37,8 +61,8 @@ const router = createRouter({
 
 // 添加路由守卫
 router.beforeEach((to, from, next) => {
+  // 检查管理员权限
   if (to.meta.requiresAuth) {
-    // 检查是否有管理员token
     const adminToken = localStorage.getItem('adminToken')
     if (!adminToken) {
       ElMessage.error('请先登录管理员账号')
@@ -46,6 +70,17 @@ router.beforeEach((to, from, next) => {
       return
     }
   }
+  
+  // 检查用户登录权限
+  if (to.meta.requiresUserAuth) {
+    const userToken = localStorage.getItem('userToken')
+    if (!userToken) {
+      ElMessage.error('请先登录用户账号')
+      next('/')
+      return
+    }
+  }
+  
   next()
 })
 

@@ -47,10 +47,52 @@ public class ResumeService {
     @Autowired
     private SnowflakeIdGenerator snowflakeIdGenerator;
 
+    @Autowired
+    private UserService userService;
+
     @Transactional
-    public String saveResume(List<Map<String, Object>> resumeData) {
+    public String saveResume(List<Map<String, Object>> resumeData, String userId) {
         try {
-            logger.info("开始保存简历数据: {}", resumeData);
+            logger.info("开始保存简历数据，用户ID: {}", userId);
+
+            // 验证用户是否存在且活跃
+            if (userId == null || !userService.validateUserPermission(userId)) {
+                throw new RuntimeException("用户未登录或用户无效");
+            }
+
+            // 使用雪花算法生成分布式ID
+            Long snowflakeId = snowflakeIdGenerator.nextId();
+            String content = objectMapper.writeValueAsString(resumeData);
+            logger.debug("转换后的JSON内容: {}", content);
+
+            // 创建简历实体
+            Resume resume = new Resume();
+            resume.setId(snowflakeId);
+            resume.setContent(content);
+            resume.setCreateTime(LocalDateTime.now());
+            resume.setUpdateTime(LocalDateTime.now());
+            resume.setStatus(Resume.STATUS_DRAFT); // 默认为草稿状态
+            resume.setLikeCount(0); // 默认点赞数为0
+            resume.setUserId(userId); // 设置用户ID
+            resume.setTitle("我的简历"); // 默认标题
+            resume.setIsTemplate(false); // 默认非模板
+
+            // 保存到数据库
+            resumeMapper.insert(resume);
+            logger.info("简历保存成功，ID: {}, 用户ID: {}", snowflakeId, userId);
+
+            return String.valueOf(snowflakeId);
+        } catch (Exception e) {
+            logger.error("保存简历失败", e);
+            throw new RuntimeException("保存简历失败: " + e.getMessage(), e);
+        }
+    }
+
+    // 保持原有的不需要用户登录的方法（用于导入导出）
+    @Transactional
+    public String saveResumeWithoutLogin(List<Map<String, Object>> resumeData) {
+        try {
+            logger.info("开始保存简历数据（无需登录）");
 
             // 使用雪花算法生成分布式ID
             Long snowflakeId = snowflakeIdGenerator.nextId();
@@ -65,8 +107,8 @@ public class ResumeService {
             resume.setUpdateTime(LocalDateTime.now());
             resume.setStatus(Resume.STATUS_PUBLISHED); // 默认为已发布状态
             resume.setLikeCount(0); // 默认点赞数为0
-            resume.setUserId(null); // 暂时不设置用户ID
-            resume.setTitle("我的简历"); // 默认标题
+            resume.setUserId(null); // 不设置用户ID
+            resume.setTitle("临时简历"); // 默认标题
             resume.setIsTemplate(false); // 默认非模板
 
             // 保存到数据库
@@ -115,6 +157,103 @@ public class ResumeService {
         } catch (Exception e) {
             logger.error("增加简历点赞数失败", e);
             throw new RuntimeException("增加简历点赞数失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 获取用户的简历列表
+     */
+    public List<Resume> getUserResumes(String userId) {
+        try {
+            logger.info("获取用户简历列表，用户ID: {}", userId);
+            
+            // 验证用户是否存在且活跃
+            if (userId == null || !userService.validateUserPermission(userId)) {
+                throw new RuntimeException("用户未登录或用户无效");
+            }
+            
+            return resumeMapper.findByUserId(userId);
+        } catch (Exception e) {
+            logger.error("获取用户简历列表失败", e);
+            throw new RuntimeException("获取用户简历列表失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 更新简历信息
+     */
+    @Transactional
+    public void updateResume(Long id, String userId, List<Map<String, Object>> resumeData, String title) {
+        try {
+            logger.info("更新简历，ID: {}, 用户ID: {}", id, userId);
+            
+            // 验证用户是否存在且活跃
+            if (userId == null || !userService.validateUserPermission(userId)) {
+                throw new RuntimeException("用户未登录或用户无效");
+            }
+            
+            // 检查简历是否属于当前用户
+            Resume existingResume = resumeMapper.findById(id);
+            if (existingResume == null) {
+                throw new RuntimeException("简历不存在");
+            }
+            if (!userId.equals(existingResume.getUserId())) {
+                throw new RuntimeException("无权限修改此简历");
+            }
+            
+            // 更新简历内容
+            String content = objectMapper.writeValueAsString(resumeData);
+            Resume resume = new Resume();
+            resume.setId(id);
+            resume.setContent(content);
+            resume.setUpdateTime(LocalDateTime.now());
+            if (title != null) {
+                resume.setTitle(title);
+            }
+            
+            resumeMapper.update(resume);
+            logger.info("简历更新成功，ID: {}", id);
+            
+        } catch (Exception e) {
+            logger.error("更新简历失败", e);
+            throw new RuntimeException("更新简历失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 删除简历
+     */
+    @Transactional
+    public void deleteResume(Long id, String userId) {
+        try {
+            logger.info("删除简历，ID: {}, 用户ID: {}", id, userId);
+            
+            // 验证用户是否存在且活跃
+            if (userId == null || !userService.validateUserPermission(userId)) {
+                throw new RuntimeException("用户未登录或用户无效");
+            }
+            
+            // 检查简历是否属于当前用户
+            Resume existingResume = resumeMapper.findById(id);
+            if (existingResume == null) {
+                throw new RuntimeException("简历不存在");
+            }
+            if (!userId.equals(existingResume.getUserId())) {
+                throw new RuntimeException("无权限删除此简历");
+            }
+            
+            // 软删除（修改状态为删除）
+            Resume resume = new Resume();
+            resume.setId(id);
+            resume.setStatus(Resume.STATUS_DELETED);
+            resume.setUpdateTime(LocalDateTime.now());
+            
+            resumeMapper.update(resume);
+            logger.info("简历删除成功，ID: {}", id);
+            
+        } catch (Exception e) {
+            logger.error("删除简历失败", e);
+            throw new RuntimeException("删除简历失败: " + e.getMessage(), e);
         }
     }
 

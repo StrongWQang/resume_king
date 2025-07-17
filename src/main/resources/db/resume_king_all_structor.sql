@@ -11,7 +11,7 @@
  Target Server Version : 80020 (8.0.20)
  File Encoding         : 65001
 
- Date: 14/07/2025 20:03:24
+ Date: 16/07/2025 21:46:23
 */
 
 SET NAMES utf8mb4;
@@ -40,20 +40,19 @@ CREATE TABLE `admin_user` (
 -- ----------------------------
 DROP TABLE IF EXISTS `approval_record`;
 CREATE TABLE `approval_record` (
-  `id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键ID',
+  `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键ID',
   `request_id` bigint NOT NULL COMMENT '申请ID',
-  `previous_status` enum('PENDING','APPROVED','REJECTED','CANCELLED') COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '前一个状态',
-  `current_status` enum('PENDING','APPROVED','REJECTED','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '当前状态',
-  `approver_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '审批人ID',
-  `operation` enum('SUBMIT','APPROVE','REJECT','CANCEL') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作类型',
-  `comment` text COLLATE utf8mb4_unicode_ci COMMENT '备注',
+  `previous_status` enum('PENDING','APPROVED','REJECTED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '前一个状态',
+  `current_status` enum('PENDING','APPROVED','REJECTED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '当前状态',
+  `approver_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '审批人ID',
+  `operation` enum('SUBMIT','APPROVE','REJECT','CANCEL') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作类型',
+  `comment` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '备注',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_request_id` (`request_id`) COMMENT '申请ID索引',
   KEY `idx_approver_id` (`approver_id`) COMMENT '审批人ID索引',
   KEY `idx_create_time` (`create_time`) COMMENT '创建时间索引',
-  KEY `idx_approval_record_request_create_time` (`request_id`,`create_time`),
-  CONSTRAINT `approval_record_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `resume_publish_request` (`id`) ON DELETE CASCADE
+  KEY `idx_approval_record_request_create_time` (`request_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审批记录表';
 
 -- ----------------------------
@@ -229,38 +228,11 @@ CREATE TABLE `permissions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
--- Table structure for resume
--- ----------------------------
-DROP TABLE IF EXISTS `resume`;
-CREATE TABLE `resume` (
-  `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `content` json NOT NULL,
-  `create_time` datetime NOT NULL,
-  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态：0-草稿，1-发布，2-归档，3-删除',
-  `like_count` int NOT NULL DEFAULT '0' COMMENT '点赞数量',
-  `user_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户ID，用于未来分片',
-  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '简历标题',
-  `is_template` tinyint(1) DEFAULT '0' COMMENT '是否为模板：0-否，1-是',
-  `template_source` enum('SYSTEM','USER_PUBLISH') COLLATE utf8mb4_unicode_ci DEFAULT 'SYSTEM' COMMENT '模板来源：SYSTEM-系统内置，USER_PUBLISH-用户发布',
-  `publish_request_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '发布申请ID',
-  `like` int NOT NULL DEFAULT '0' COMMENT '点赞数',
-  PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_status_create_time` (`status`,`create_time`) USING BTREE COMMENT '状态和创建时间复合索引，用于列表查询',
-  KEY `idx_like_count` (`like_count`) USING BTREE COMMENT '点赞数索引，用于热门排序',
-  KEY `idx_user_id` (`user_id`) USING BTREE COMMENT '用户ID索引，用于未来按用户分片',
-  KEY `idx_template_source` (`template_source`) COMMENT '模板来源索引',
-  KEY `idx_publish_request_id` (`publish_request_id`) COMMENT '发布申请ID索引',
-  KEY `idx_resume_is_template_status` (`is_template`,`status`),
-  CONSTRAINT `fk_resume_publish_request` FOREIGN KEY (`publish_request_id`) REFERENCES `resume_publish_request` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='简历表';
-
--- ----------------------------
 -- Table structure for resume_0
 -- ----------------------------
 DROP TABLE IF EXISTS `resume_0`;
 CREATE TABLE `resume_0` (
-  `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` bigint NOT NULL COMMENT '主键ID',
   `content` json NOT NULL,
   `create_time` datetime NOT NULL,
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
@@ -286,7 +258,7 @@ CREATE TABLE `resume_0` (
 -- ----------------------------
 DROP TABLE IF EXISTS `resume_1`;
 CREATE TABLE `resume_1` (
-  `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` bigint NOT NULL COMMENT '主键ID',
   `content` json NOT NULL,
   `create_time` datetime NOT NULL,
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
@@ -308,31 +280,46 @@ CREATE TABLE `resume_1` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='简历表';
 
 -- ----------------------------
--- Table structure for resume_backup
+-- Table structure for resume_2
 -- ----------------------------
-DROP TABLE IF EXISTS `resume_backup`;
-CREATE TABLE `resume_backup` (
-  `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+DROP TABLE IF EXISTS `resume_2`;
+CREATE TABLE `resume_2` (
+  `id` bigint NOT NULL COMMENT '主键ID',
   `content` json NOT NULL,
   `create_time` datetime NOT NULL,
-  `like` int NOT NULL DEFAULT '0' COMMENT '点赞数'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态：0-草稿，1-发布，2-归档，3-删除',
+  `like_count` int NOT NULL DEFAULT '0' COMMENT '点赞数量',
+  `user_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户ID，用于未来分片',
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '简历标题',
+  `is_template` tinyint(1) DEFAULT '0' COMMENT '是否为模板：0-否，1-是',
+  `template_source` enum('SYSTEM','USER_PUBLISH') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'SYSTEM' COMMENT '模板来源：SYSTEM-系统内置，USER_PUBLISH-用户发布',
+  `publish_request_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '发布申请ID',
+  `like` int NOT NULL DEFAULT '0' COMMENT '点赞数',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_status_create_time` (`status`,`create_time`) USING BTREE COMMENT '状态和创建时间复合索引，用于列表查询',
+  KEY `idx_like_count` (`like_count`) USING BTREE COMMENT '点赞数索引，用于热门排序',
+  KEY `idx_user_id` (`user_id`) USING BTREE COMMENT '用户ID索引，用于未来按用户分片',
+  KEY `idx_template_source` (`template_source`) COMMENT '模板来源索引',
+  KEY `idx_publish_request_id` (`publish_request_id`) COMMENT '发布申请ID索引',
+  KEY `idx_resume_is_template_status` (`is_template`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='简历表';
 
 -- ----------------------------
 -- Table structure for resume_publish_request
 -- ----------------------------
 DROP TABLE IF EXISTS `resume_publish_request`;
 CREATE TABLE `resume_publish_request` (
-  `id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键ID',
+  `id` bigint NOT NULL COMMENT '主键ID',
   `resume_id` bigint NOT NULL COMMENT '简历ID',
-  `user_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户ID',
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '简历标题',
-  `description` text COLLATE utf8mb4_unicode_ci COMMENT '简历描述',
-  `status` enum('PENDING','APPROVED','REJECTED','CANCELLED') COLLATE utf8mb4_unicode_ci DEFAULT 'PENDING' COMMENT '审批状态',
+  `user_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户ID',
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '简历标题',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '简历描述',
+  `status` enum('PENDING','APPROVED','REJECTED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'PENDING' COMMENT '审批状态',
   `submit_time` datetime NOT NULL COMMENT '提交时间',
   `approve_time` datetime DEFAULT NULL COMMENT '审批时间',
-  `approver_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '审批人ID',
-  `reject_reason` text COLLATE utf8mb4_unicode_ci COMMENT '拒绝理由',
+  `approver_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '审批人ID',
+  `reject_reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '拒绝理由',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -340,8 +327,7 @@ CREATE TABLE `resume_publish_request` (
   KEY `idx_status` (`status`) COMMENT '状态索引',
   KEY `idx_submit_time` (`submit_time`) COMMENT '提交时间索引',
   KEY `idx_approver_id` (`approver_id`) COMMENT '审批人ID索引',
-  KEY `idx_resume_publish_request_status_submit_time` (`status`,`submit_time`),
-  CONSTRAINT `resume_publish_request_ibfk_1` FOREIGN KEY (`resume_id`) REFERENCES `resume` (`id`) ON DELETE CASCADE
+  KEY `idx_resume_publish_request_status_submit_time` (`status`,`submit_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='简历发布申请表';
 
 -- ----------------------------
@@ -453,32 +439,6 @@ BEGIN
     END LOOP;
     
     CLOSE id_cursor;
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Triggers structure for table resume_publish_request
--- ----------------------------
-DROP TRIGGER IF EXISTS `trigger_approval_history`;
-delimiter ;;
-CREATE TRIGGER `trigger_approval_history` AFTER UPDATE ON `resume_publish_request` FOR EACH ROW BEGIN
-    IF OLD.status != NEW.status THEN
-        INSERT INTO approval_record (
-            id, request_id, previous_status, current_status, 
-            approver_id, operation, comment, create_time
-        ) VALUES (
-            UUID(), NEW.id, OLD.status, NEW.status, 
-            NEW.approver_id, 
-            CASE NEW.status
-                WHEN 'APPROVED' THEN 'APPROVE'
-                WHEN 'REJECTED' THEN 'REJECT'
-                WHEN 'CANCELLED' THEN 'CANCEL'
-                ELSE 'SUBMIT'
-            END,
-            NEW.reject_reason, NOW()
-        );
-    END IF;
 END
 ;;
 delimiter ;

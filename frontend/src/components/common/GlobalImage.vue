@@ -2,6 +2,7 @@
   <div class="global-image" :class="{ 'loading': isLoading, 'error': hasError }">
     <img
       v-if="!hasError"
+      ref="imgRef"
       :src="proxyUrl"
       :alt="alt"
       crossorigin="anonymous"
@@ -20,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Loading, Warning } from '@element-plus/icons-vue'
 import { imageLoader } from "../../utils/imageLoader";
 
@@ -32,12 +33,23 @@ const props = defineProps<{
   objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
 }>()
 
+const imgRef = ref<HTMLImageElement>()
 const isLoading = ref(true)
 const hasError = ref(false)
-const retryCount = ref(0)
-const maxRetries = 3
+const imageLoadErrors = ref(new Set<string>())
 
 const proxyUrl = computed(() => {
+  if (!props.src) return ''
+  
+  // 开发环境下添加调试信息
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== GlobalImage URL处理 ===')
+    console.log('原始src:', props.src)
+    console.log('清理后URL:', imageLoader.cleanUrl(props.src))
+    console.log('最终代理URL:', imageLoader.getProxyImageUrl(props.src))
+    console.log('=== 处理完成 ===')
+  }
+  
   return imageLoader.getProxyImageUrl(props.src)
 })
 
@@ -54,41 +66,45 @@ const handleImageLoad = () => {
   hasError.value = false
 }
 
-const handleImageError = async () => {
-  if (retryCount.value < maxRetries) {
-    retryCount.value++
-    // 重试前检查图片是否可访问
-    const isAccessible = await imageLoader.checkImageAccess(props.src)
-    if (isAccessible) {
-      // 如果可访问，强制重新加载
-      const timestamp = new Date().getTime()
-      const img = document.createElement('img')
-      img.crossOrigin = 'anonymous'
-      img.src = `${proxyUrl.value}${proxyUrl.value.includes('?') ? '&' : '?'}t=${timestamp}`
-    } else {
-      hasError.value = true
-      isLoading.value = false
-    }
-  } else {
+const handleImageError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  const imgUrl = img.src
+  
+  // 避免重复处理同一个错误
+  if (imageLoadErrors.value.has(imgUrl)) {
+    return
+  }
+  
+  imageLoadErrors.value.add(imgUrl)
+  
+  console.error('图片加载失败:', {
+    src: img.src,
+    alt: img.alt,
+    originalSrc: props.src,
+    cleanedUrl: imageLoader.cleanUrl(props.src)
+  })
+  
+  // 使用imageLoader的错误处理方法
+  imageLoader.handleImageError(img, '/logo-large.jpg')
+  
+  // 如果默认图片也失败了，显示错误状态
+  if (img.src.includes('/logo-large.jpg')) {
     hasError.value = true
     isLoading.value = false
   }
 }
 
-onMounted(async () => {
-  try {
-    // 预加载图片时设置crossOrigin
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      handleImageLoad()
-    }
-    img.onerror = () => {
-      handleImageError()
-    }
-    img.src = proxyUrl.value
-  } catch (error) {
-    handleImageError()
+// 监听src变化，重置状态
+watch(() => props.src, () => {
+  isLoading.value = true
+  hasError.value = false
+  imageLoadErrors.value.clear()
+})
+
+onMounted(() => {
+  if (!props.src) {
+    isLoading.value = false
+    hasError.value = true
   }
 })
 </script>

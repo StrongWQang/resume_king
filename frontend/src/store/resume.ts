@@ -145,29 +145,48 @@ export const useResumeStore = defineStore('resume', {
         const componentsToSave = JSON.parse(JSON.stringify(this.components))
         console.log('开始保存简历数据到服务器:', componentsToSave)
         
+        // 获取用户Token
+        const userToken = localStorage.getItem('userToken');
+        
+        // 构建请求头
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
+        
+        // 如果有用户Token，添加到请求头
+        if (userToken) {
+          headers['Authorization'] = userToken;
+        }
+        
         const response = await fetch('/api/resumes', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify(componentsToSave)
         })
         
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('保存失败，服务器响应:', errorText)
-          throw new Error(`保存失败: ${errorText}`)
+        if (response.status === 401) {
+          // 用户未登录或Token无效
+          throw new Error('保存简历需要登录，请先登录');
         }
         
-        // 直接获取响应文本，避免JSON.parse时的数字精度问题
-        const idString = await response.text()
-        console.log('保存成功，返回数据:', idString)
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('保存失败，服务器响应:', errorData);
+          throw new Error(errorData.message || '保存失败');
+        }
         
-        // 直接使用字符串形式的ID
-        this.currentResumeId = idString
-        localStorage.setItem('lastResumeId', idString)
+        // 解析响应数据
+        const responseData = await response.json();
+        console.log('保存成功，返回数据:', responseData);
         
-        return idString
+        if (responseData.success) {
+          const idString = responseData.resumeId;
+          this.currentResumeId = idString;
+          localStorage.setItem('lastResumeId', idString);
+          return idString;
+        } else {
+          throw new Error(responseData.message || '保存失败');
+        }
       } catch (error) {
         console.error('保存简历失败:', error)
         throw error
