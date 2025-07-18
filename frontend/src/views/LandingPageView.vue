@@ -26,7 +26,7 @@
           <a href="#projects" class="nav-link" @click="smoothScrollTo('projects', $event)">项目</a>
           <a href="#features" class="nav-link" @click="smoothScrollTo('features', $event)">功能</a>
           <button class="nav-btn nav-btn-secondary" @click="goToAuthor">关于作者</button>
-          <button class="nav-btn nav-btn-primary" @click="goToEditor">开始制作</button>
+          <button class="nav-btn nav-btn-primary" @click="goToEditor">免费制作</button>
         </div>
       </div>
     </nav>
@@ -50,24 +50,25 @@
         
         <h1 class="hero-title-massive">
           <div class="title-line">
-            <span class="title-word-massive">创造</span>
+            <span class="title-word-massive">你的努力</span>
           </div>
           <div class="title-line">
-            <span class="title-word-massive">属于你的</span>
+            <span class="title-word-massive">不该成为别人的</span>
           </div>
           <div class="title-line highlight-line">
-            <span class="title-word-massive highlight-massive">顶级简历</span>
+            <span class="title-word-massive highlight-massive">"付费墙"</span>
           </div>
         </h1>
         
         <p class="hero-description-enhanced">
-          <span class="description-line">一个简历制作网站旨在通过免费和自由的体验来吸引您的受众。</span>
-          <span class="description-line">专注于精心策划的体验和贴心，讲述沉浸式的职业故事。</span>
+          <span class="description-line">花了一个下午，把自己的经历和梦想浓缩进一份简历，准备奔赴下一场山海。</span>
+          <span class="description-line">就在下载的那一刻，一个冰冷的二维码，成为了你通往未来的拦路虎。</span>
+          <span class="description-line"><strong>我们受够了这种"绑架式"的收费。</strong></span>
         </p>
         
         <div class="hero-actions">
           <button class="cta-button-enhanced" @click="goToEditor">
-            <span class="button-text">开始您的故事</span>
+            <span class="button-text">免费制作简历</span>
             <div class="button-arrow">→</div>
             <div class="button-ripple"></div>
           </button>
@@ -84,27 +85,33 @@
     <section id="story" class="story-section">
       <div class="story-content">
         <div class="story-text">
-          <h2 class="story-title-massive">为什么选择<br><span class="highlight-text">数字化简历？</span></h2>
+          <h2 class="story-title-massive">所以<br><span class="highlight-text">简历王</span>来了</h2>
           <p class="story-description-enhanced">
-            在数字时代，传统简历已经不能满足现代职场的需求。我们的平台让您能够创建
-            <strong>互动性强、视觉吸引力突出</strong>的数字简历，
-            通过动画效果和精心设计的布局来讲述您的职业故事。
+            努力半天的心血成果被黑心平台当作<strong>"人质"?</strong>
+            我们想做的很简单：把创作简历的权利，毫无保留地还给你。
+          </p>
+          <p class="story-description-enhanced">
+            没有隐藏条款，没有导出"惊喜"。
+            只有<strong>免费、开源、自由</strong>。
+          </p>
+          <p class="story-description-enhanced">
+            在简历王，放心去编辑，安心去导出。
           </p>
         </div>
         <div class="story-visual">
           <div class="visual-card">
             <div class="card-content">
-              <div class="card-icon">📄</div>
-              <h3>传统简历</h3>
-              <p>静态、单调、难以突出</p>
+              <div class="card-icon">💸</div>
+              <h3>付费简历</h3>
+              <p>下载收费、功能受限</p>
             </div>
           </div>
           <div class="transform-arrow">→</div>
           <div class="visual-card featured">
             <div class="card-content">
-              <div class="card-icon">✨</div>
-              <h3>数字简历</h3>
-              <p>动态、交互、引人注目</p>
+              <div class="card-icon">🆓</div>
+              <h3>简历王</h3>
+              <p>免费、开源、自由</p>
             </div>
           </div>
         </div>
@@ -114,12 +121,55 @@
     <!-- 演示区域 -->
     <DemoSection />
 
+    <!-- 理念区域 -->
+    <section class="philosophy-section">
+      <div class="philosophy-content">
+        <div class="philosophy-text">
+          <h2 class="philosophy-title">我们坚信，你的才华和努力不该被标价</h2>
+          <div class="philosophy-story">
+            <p class="philosophy-paragraph">
+              你的才华，无需付费解锁。
+            </p>
+            <p class="philosophy-paragraph">
+              为每一个真诚的求职者而生。
+            </p>
+            <p class="philosophy-paragraph highlight-paragraph">
+              <strong>拒绝简历“刺客”！</strong>
+            </p>
+          </div>
+        </div>
+        <div class="philosophy-values">
+          <div class="value-item">
+            <div class="value-icon">🆓</div>
+            <div class="value-content">
+              <h3>免费</h3>
+              <p>永远不收费，永远不设限</p>
+            </div>
+          </div>
+          <div class="value-item">
+            <div class="value-icon">🔓</div>
+            <div class="value-content">
+              <h3>开源</h3>
+              <p>代码透明，社区驱动</p>
+            </div>
+          </div>
+          <div class="value-item">
+            <div class="value-icon">✨</div>
+            <div class="value-content">
+              <h3>自由</h3>
+              <p>无限制使用，随心所欲</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 项目展示区域 - 大标题冲击 -->
     <section id="projects" class="projects-section">
       <div class="section-header">
         <h2 class="section-title-massive">
-          <span class="title-word-animate">我们引以为豪的</span>
-          <span class="title-word-animate highlight-word">项目</span>
+          <span class="title-word-animate">我们的</span>
+          <span class="title-word-animate highlight-word">价值主张</span>
         </h2>
       </div>
       
@@ -130,14 +180,14 @@
               <div class="project-placeholder">{{ project.icon }}</div>
             </div>
             <div class="project-overlay">
-              <button class="project-btn" @click="goToEditor">查看项目</button>
+              <button class="project-btn" @click="goToEditor">立即免费体验</button>
             </div>
           </div>
           <div class="project-content">
             <h3 class="project-title">{{ project.title }}</h3>
             <p class="project-description">{{ project.description }}</p>
             <a href="#" class="project-link" @click="goToEditor">
-              <span>开始制作</span>
+              <span>免费体验</span>
               <div class="link-arrow">→</div>
             </a>
           </div>
@@ -149,11 +199,11 @@
     <section id="features" class="features-storytelling">
       <div class="features-content">
         <div class="features-header">
-          <h2 class="features-title-massive">
-            <span class="features-word">强大功能</span>
-            <span class="features-word highlight-features">无限可能</span>
-          </h2>
-          <p class="features-subtitle-enhanced">体验我们为您精心打造的专业工具</p>
+                  <h2 class="features-title-massive">
+          <span class="features-word">真正的</span>
+          <span class="features-word highlight-features">免费体验</span>
+        </h2>
+        <p class="features-subtitle-enhanced">不只是免费，更是自由——无限制使用所有功能</p>
         </div>
         
         <div class="features-showcase">
@@ -182,8 +232,8 @@
     <section class="stats-storytelling">
       <div class="stats-content">
         <h2 class="stats-title-massive">
-          <span class="stats-word">数字告诉我们的</span>
-          <span class="stats-word highlight-stats">故事</span>
+          <span class="stats-word">我们的</span>
+          <span class="stats-word highlight-stats">承诺</span>
         </h2>
         <div class="stats-grid">
           <div class="stat-card" v-for="(stat, index) in stats" :key="index">
@@ -202,15 +252,15 @@
     <section class="cta-storytelling">
       <div class="cta-content">
         <h2 class="cta-title-massive">
-          <span class="cta-word">准备开始您的</span>
-          <span class="cta-word highlight-cta">数字故事</span>
-          <span class="cta-word">了吗？</span>
+          <span class="cta-word">不再为简历</span>
+          <span class="cta-word highlight-cta">摆脱</span>
+          <span class="cta-word">的时代</span>
         </h2>
         <p class="cta-subtitle-enhanced">
-          加入数万名用户的选择，让我们帮您打造令人印象深刻的数字简历
+          摆脱付费墙的束缚，在简历王享受真正的免费、开源、自由体验
         </p>
         <button class="cta-main-button-enhanced" @click="goToEditor">
-          <span class="main-button-text">开始创作</span>
+          <span class="main-button-text">立即免费制作</span>
           <div class="button-glow-enhanced"></div>
           <div class="button-waves"></div>
         </button>
@@ -227,11 +277,11 @@
         <div class="footer-links">
           <a href="#" @click="goToAuthor">关于作者</a>
           <a href="#" @click="goToGitHub">开源项目</a>
-          <a href="#" @click="goToEditor">开始制作</a>
+          <a href="#" @click="goToEditorOK">免费制作</a>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2025 Resume King  开源   免费   自由</p>
+        <p>&copy; 2025 简历王 - 你的努力，不该成为别人的"付费墙"</p>
       </div>
     </footer>
   </div>
@@ -252,24 +302,24 @@ const router = useRouter()
 
 const projects = ref([
   {
-    icon: '🎨',
-    title: '创意简历设计',
-    description: '通过交互式设计和动画效果，为您的简历注入活力'
+    icon: '🆓',
+    title: '永久免费',
+    description: '所有功能永久免费，没有隐藏费用和付费墙'
   },
   {
-    icon: '💼',
-    title: '专业简历模板',
-    description: '多种行业专属模板，满足不同职业需求'
+    icon: '🔓',
+    title: '完全开源',
+    description: '代码完全开源，透明可信，社区共同维护'
   },
   {
-    icon: '🚀',
-    title: 'AI智能优化',
-    description: '基于AI技术，智能优化简历内容和结构'
+    icon: '✨',
+    title: '使用自由',
+    description: '无限制使用所有功能，随时导出，无水印'
   },
   {
-    icon: '📊',
-    title: '数据分析面板',
-    description: '实时分析简历效果，提供优化建议'
+    icon: '❤️',
+    title: '用户第一',
+    description: '以用户体验为核心，拒绝套路，拒绝收费'
   }
 ])
 
@@ -282,37 +332,41 @@ const features = ref([
   },
   {
     icon: 'icon-template',
-    title: '多样模板',
-    description: '提供多种专业模板，适合不同行业和职位需求',
-    benefits: ['50+专业模板', '行业定制', '实时预览']
+    title: '丰富模板库',
+    description: '提供多种专业模板，完全免费使用，无任何限制',
+    benefits: ['完全免费', '无使用限制', '实时预览']
   },
   {
     icon: 'icon-export',
-    title: '一键导出',
-    description: '支持PDF、Word等多种格式导出，满足不同需求',
-    benefits: ['多格式支持', '高清导出', '快速下载']
+    title: '自由导出',
+    description: '支持PDF、Word等多种格式导出，永远不收费',
+    benefits: ['永久免费导出', '高清质量', '无水印']
   },
   {
     icon: 'icon-cloud',
-    title: '云端存储',
-    description: '简历云端保存，随时随地访问和编辑您的简历',
-    benefits: ['云端同步', '版本控制', '安全备份']
+    title: '开源透明',
+    description: '完全开源的代码，透明可信，社区驱动持续改进',
+    benefits: ['开源代码', '社区驱动', '持续更新']
   }
 ])
 
 const stats = ref([
-  { number: '50K+', label: '用户选择' },
-  { number: '100+', label: '专业模板' },
-  { number: '99%', label: '满意度' },
-  { number: '24/7', label: '在线服务' }
+  { number: '100%', label: '永久免费' },
+  { number: '开源', label: '透明开放' },
+  { number: '自由', label: '无限制使用' },
+  { number: '0元', label: '导出费用' }
 ])
 
 const goToEditor = () => {
   router.push('/editor')
 }
 
+const goToEditorOK = () => {
+  window.open('https://windrunnermax.github.io/CanvasEditor/', '_blank')
+}
+
 const goToGitHub = () => {
-  window.open('https://github.com/resume-king/resume_king', '_blank')
+  window.open('https://github.com/StrongWQang/resume_king', '_blank')
 }
 
 const goToAuthor = () => {
@@ -516,6 +570,50 @@ const initAnimations = () => {
     start: 'top 80%'
   })
   
+  // 理念标题震撼登场
+  ScrollTrigger.batch('.philosophy-title', {
+    onEnter: (elements) => {
+      gsap.from(elements, {
+        y: 100,
+        opacity: 0,
+        rotationX: 45,
+        scale: 0.8,
+        duration: 1.2,
+        ease: 'back.out(1.7)'
+      })
+    },
+    start: 'top 80%'
+  })
+  
+  // 理念段落逐行出现
+  ScrollTrigger.batch('.philosophy-paragraph', {
+    onEnter: (elements) => {
+      gsap.from(elements, {
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        stagger: 0.2,
+        ease: 'power3.out'
+      })
+    },
+    start: 'top 80%'
+  })
+  
+  // 价值观卡片登场
+  ScrollTrigger.batch('.value-item', {
+    onEnter: (elements) => {
+      gsap.from(elements, {
+        x: 50,
+        opacity: 0,
+        rotationY: 45,
+        duration: 1.2,
+        stagger: 0.2,
+        ease: 'back.out(1.7)'
+      })
+    },
+    start: 'top 80%'
+  })
+  
   // 项目标题震撼登场
   ScrollTrigger.batch('.section-title-massive', {
     onEnter: (elements) => {
@@ -662,6 +760,15 @@ const initAnimations = () => {
             onUpdate: function() {
               el.textContent = Math.floor(this.targets()[0].val) + (finalText.includes('K') ? 'K+' : finalText.includes('%') ? '%' : '')
             }
+          })
+        } else {
+          // 对于非数字内容，添加打字机效果
+          gsap.from(el, {
+            scale: 0.5,
+            opacity: 0,
+            duration: 1,
+            delay: index * 0.2,
+            ease: 'back.out(1.7)'
           })
         }
       })
@@ -2484,6 +2591,110 @@ body {
   }
 }
 
+/* Philosophy Section */
+.philosophy-section {
+  padding: 8rem 0;
+  background: #111111;
+  position: relative;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  left: 0;
+  right: 0;
+}
+
+.philosophy-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.philosophy-text {
+  color: white;
+}
+
+.philosophy-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  margin-top: 0;
+  background: linear-gradient(45deg, #10b981, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.philosophy-story {
+  font-size: 1.2rem;
+  line-height: 1.8;
+}
+
+.philosophy-paragraph {
+  margin-bottom: 1.5rem;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+.philosophy-paragraph.highlight-paragraph {
+  color: #10b981;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-top: 2rem;
+}
+
+.philosophy-values {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.value-item {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.value-item:hover {
+  transform: translateY(-5px);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.value-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.value-content {
+  color: white;
+}
+
+.value-content h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 0;
+  color: #10b981;
+}
+
+.value-content p {
+  font-size: 1rem;
+  opacity: 0.8;
+  margin: 0;
+  font-weight: 300;
+}
+
 /* Footer */
 .storytelling-footer {
   background: #0a0a0a;
@@ -2679,6 +2890,32 @@ body {
   .footer-links {
     justify-content: center;
   }
+  
+  .philosophy-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .philosophy-title {
+    font-size: 2.5rem;
+    text-align: center;
+  }
+  
+  .philosophy-story {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .value-item {
+    padding: 1.5rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .value-icon {
+    font-size: 2rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2738,6 +2975,22 @@ body {
   
   .project-content {
     padding: 1.5rem;
+  }
+  
+  .philosophy-content {
+    padding: 0 0.5rem;
+  }
+  
+  .philosophy-title {
+    font-size: 2rem;
+  }
+  
+  .philosophy-story {
+    font-size: 1.1rem;
+  }
+  
+  .value-item {
+    padding: 1rem;
   }
 }
 </style> 
