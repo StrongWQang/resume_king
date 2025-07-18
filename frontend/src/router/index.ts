@@ -4,6 +4,11 @@ import { ElMessage } from 'element-plus'
 const routes = [
   {
     path: '/',
+    name: 'LandingPage',
+    component: () => import('../views/LandingPageView.vue')
+  },
+  {
+    path: '/editor',
     name: 'ResumeEditor',
     component: () => import('../views/ResumeEditorView.vue')
   },

@@ -1,12 +1,19 @@
 <template>
-  <Header />
+  <Header v-if="showHeader" />
   <router-view />
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import Header from './components/layout/Header.vue'
 import { useSettingsStore } from './store/settings'
+
+const route = useRoute()
+const showHeader = computed(() => {
+  // 在官网首页隐藏Header
+  return route.name !== 'LandingPage'
+})
 
 const settingsStore = useSettingsStore()
 
@@ -16,6 +23,43 @@ onMounted(() => {
 </script>
 
 <style>
+/* 全局样式重置 - 彻底去掉白边 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+#app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
 :root {
   --primary-bg: #ffffff;
   --primary-text: #333333;

@@ -563,7 +563,7 @@ const handleLogoClick = () => {
     return;
   }
   
-  router.push("/");
+  router.push("/editor");
 };
 
 const copyResumeId = () => {
