@@ -22,6 +22,7 @@
         </div>
         <div class="nav-menu">
           <a href="#story" class="nav-link" @click="smoothScrollTo('story', $event)">故事</a>
+          <a href="#demo" class="nav-link" @click="smoothScrollTo('demo', $event)">演示</a>
           <a href="#projects" class="nav-link" @click="smoothScrollTo('projects', $event)">项目</a>
           <a href="#features" class="nav-link" @click="smoothScrollTo('features', $event)">功能</a>
           <button class="nav-btn nav-btn-secondary" @click="goToAuthor">关于作者</button>
@@ -109,6 +110,9 @@
         </div>
       </div>
     </section>
+
+    <!-- 演示区域 -->
+    <DemoSection />
 
     <!-- 项目展示区域 - 大标题冲击 -->
     <section id="projects" class="projects-section">
@@ -240,6 +244,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
 import { TextPlugin } from 'gsap/TextPlugin'
+import DemoSection from '@/components/common/DemoSection.vue'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, TextPlugin)
 
@@ -474,6 +479,38 @@ const initAnimations = () => {
         scale: 0.5,
         duration: 1.5,
         ease: 'power4.out'
+      })
+    },
+    start: 'top 80%'
+  })
+  
+  // 演示标题震撼登场
+  ScrollTrigger.batch('.demo-title-massive', {
+    onEnter: (elements) => {
+      gsap.from('.demo-word', {
+        y: 180,
+        opacity: 0,
+        rotationX: 90,
+        rotationY: -45,
+        scale: 0.4,
+        duration: 1.6,
+        stagger: 0.3,
+        ease: 'power4.out'
+      })
+    },
+    start: 'top 80%'
+  })
+  
+  // 演示容器登场
+  ScrollTrigger.batch('.demo-frame-container', {
+    onEnter: (elements) => {
+      gsap.from(elements, {
+        y: 100,
+        opacity: 0,
+        rotationX: 45,
+        scale: 0.8,
+        duration: 1.4,
+        ease: 'back.out(1.7)'
       })
     },
     start: 'top 80%'
